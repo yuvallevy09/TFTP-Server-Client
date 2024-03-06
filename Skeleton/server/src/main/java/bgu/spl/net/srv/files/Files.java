@@ -9,11 +9,11 @@ public class Files {
     }
 
     public void upload(String fileName, T file) {
-
+        
     }
 
-    public void delete() {
-       
+    public void delete(String fileName) {
+       files.remove(fileName);
     }
 
     public List<String> listFiles() {
