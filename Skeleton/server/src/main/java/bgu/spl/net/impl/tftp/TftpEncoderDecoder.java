@@ -8,7 +8,7 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
     //TODO: Implement here the TFTP encoder and decoder
     private byte[] bytes = new byte[1<<10]; // start with 1K
     private int length = 0;
-    private int opCode = 0;
+    private short opCode = 0;
     private int dataSize;
 
     @Override
@@ -19,7 +19,7 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
         }
         else if(length == 1){
             pushByte(nextByte);
-            opCode = ((bytes[0] << 8) | (bytes[1] & 0xFF)); // Combine bytes into an integer
+            opCode = (short)(((short)bytes[0] & 0xFF)<<8|(short)(bytes[1] & 0xFF)); // Combine bytes into an integer
         }
         else
         {
@@ -66,7 +66,7 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
         }
         else if(length == 3){
             pushByte(nextByte);
-            dataSize = ((bytes[2] << 8) | (bytes[3] & 0xFF)); // Packet DATA size
+            dataSize = (short)(((short)bytes[2] & 0xFF)<<8|(short)(bytes[3] & 0xFF)); // Packet DATA size
         }
         else if(length < dataSize + 4){
             pushByte(nextByte);

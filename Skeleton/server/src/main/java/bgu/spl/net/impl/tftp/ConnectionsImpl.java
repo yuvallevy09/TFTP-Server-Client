@@ -1,23 +1,24 @@
 package bgu.spl.net.impl.tftp;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class ConnectionsImpl implements Connections<ConnectionHandler<T>> {
+public class ConnectionsImpl<T> implements Connections<T> {
 
-    private ConcurrentHashMap<Integer, ConnectionHandler<?>> connections = new ConcurrentHashMap<>();
-    
+    private ConcurrentHashMap<Integer, ConnectionHandler<T>> connections = new ConcurrentHashMap<>();
 
     @Override
-    void connect(int connectionId, ConnectionHandler<?> handler){
+    public
+    void disconnect(int connectionId){
+        connections.remove(connectionId);
+    }
+
+    @Override
+    public void connect(int connectionId, ConnectionHandler<T> handler) {
         connections.put(connectionId, handler);
     }
 
     @Override
-    boolean send(int connectionId, T msg){
-
-    }
-
-    @Override
-    void disconnect(int connectionId){
-        connections.remove(connectionId);
+    public boolean send(int connectionId, T msg) {
+        connections.get(connectionId).send(msg);
+        return true;
     }
 }
