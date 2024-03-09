@@ -13,7 +13,15 @@ public class ConnectionsImpl<T> implements Connections<T> {
 
     @Override
     public void connect(int connectionId, ConnectionHandler<T> handler) {
-        connections.put(connectionId, handler);
+        if(connections.get(connectionId) != null){
+            connections.put(connectionId, handler);
+            // return ACK
+        }
+        else
+        {
+            //ERROR
+        }
+        
     }
 
     @Override
