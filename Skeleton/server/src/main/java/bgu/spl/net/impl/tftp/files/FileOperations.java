@@ -11,13 +11,26 @@ class FileOperations{
 
     public FileOperations(String _folderPath){
         folderPath = _folderPath;
+        
     }
 
-    public boolean search(String username){
+    public boolean search(String filename){
 
     }
 
+    public void read(String filename){
+
+    }
     
+    public void write(String filename){
+
+    }
+
+    public boolean delete(String filename){
+
+    }
+
+
 
 
 

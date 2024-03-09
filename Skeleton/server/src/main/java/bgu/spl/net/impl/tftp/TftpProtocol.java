@@ -1,9 +1,10 @@
 package bgu.spl.net.impl.tftp;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ConcurrentHashMap;
-
 import bgu.spl.net.api.BidiMessagingProtocol;
 import bgu.spl.net.srv.Connections;
+
+
 
 
 class holder{
@@ -64,8 +65,11 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
             // chek if file exist, if so delete it and send ACK to client and  BCAST to all, else send ERROR to client
             //if file is not in files
             String filename = new String(message, 2, message.length, StandardCharsets.UTF_8);
-
-            if()// needs access to the Files Directory here
+            try {
+                boolean isDeleted = 
+            } catch (Exception e) {
+                // TODO: handle exception
+            }
             ;
             else
             {
@@ -80,7 +84,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                 System.arraycopy(errorByte, 0, msgERROR, 4 , errorByte.length); //Copies the error inside the error msg
                 connections.send(connectionId, msgERROR);
             }
-           
+
 
         }
         
@@ -96,7 +100,10 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
        connections.disconnect(connectionId); //needs to happend in DISC process
        //needs to remove here the client from the logged in list
        return shouldTerminate;
-    } 
+    }
+    
+    
+
 
 
     

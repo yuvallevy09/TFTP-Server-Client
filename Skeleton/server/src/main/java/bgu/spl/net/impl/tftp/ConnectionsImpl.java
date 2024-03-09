@@ -3,7 +3,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ConnectionsImpl<T> implements Connections<T> {
 
-    private ConcurrentHashMap<Integer, ConnectionHandler<T>> connections = new ConcurrentHashMap<>();
+    public ConcurrentHashMap<Integer, ConnectionHandler<T>> connections = new ConcurrentHashMap<>();
 
     @Override
     public
@@ -13,15 +13,7 @@ public class ConnectionsImpl<T> implements Connections<T> {
 
     @Override
     public void connect(int connectionId, ConnectionHandler<T> handler) {
-        if(connections.get(connectionId) != null){
-            connections.put(connectionId, handler);
-            // return ACK
-        }
-        else
-        {
-            //ERROR
-        }
-        
+        connections.put(connectionId, handler);    
     }
 
     @Override
