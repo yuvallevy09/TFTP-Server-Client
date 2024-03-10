@@ -1,5 +1,6 @@
 package bgu.spl.net.srv;
 
+import bgu.spl.net.api.BidiMessagingProtocol;
 import bgu.spl.net.api.MessageEncoderDecoder;
 import bgu.spl.net.api.MessagingProtocol;
 import bgu.spl.net.impl.tftp.ConnectionsImpl;
@@ -12,7 +13,7 @@ import java.util.function.Supplier;
 public abstract class BaseServer<T> implements Server<T> {
 
     private final int port;
-    private final Supplier<MessagingProtocol<T>> protocolFactory;
+    private final Supplier<BidiMessagingProtocol<T>> protocolFactory;
     private final Supplier<MessageEncoderDecoder<T>> encdecFactory;
     private ServerSocket sock;
     private Connections<T> connections;
@@ -20,7 +21,7 @@ public abstract class BaseServer<T> implements Server<T> {
 
     public BaseServer(
             int port,
-            Supplier<MessagingProtocol<T>> protocolFactory,
+            Supplier<BidiMessagingProtocol<T>> protocolFactory,
             Supplier<MessageEncoderDecoder<T>> encdecFactory) {
 
         this.port = port;
@@ -43,11 +44,14 @@ public abstract class BaseServer<T> implements Server<T> {
 
                 Socket clientSock = serverSock.accept();
 
+                BidiMessagingProtocol<T> protocol = protocolFactory.get();
+
                 BlockingConnectionHandler<T> handler = new BlockingConnectionHandler<>(
                         clientSock,
                         encdecFactory.get(),
-                        protocolFactory.get());
-                connections.connect(idCounter++, handler);
+                        protocol);
+                connections.connect(idCounter, handler);
+                protocol.start(idCounter++, connections);
                 execute(handler);
             }
         } catch (IOException ex) {

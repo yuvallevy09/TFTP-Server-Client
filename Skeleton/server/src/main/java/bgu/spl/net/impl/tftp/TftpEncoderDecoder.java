@@ -123,7 +123,7 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
     }
 
     private byte[] decodeDISC(byte nextByte){
-        return bytes; // not sure about this, Guy implemented it like decodeACK
+        return bytes;
     }
 
 }

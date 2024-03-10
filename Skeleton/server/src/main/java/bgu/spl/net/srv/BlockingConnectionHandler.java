@@ -1,5 +1,6 @@
 package bgu.spl.net.srv;
 
+import bgu.spl.net.api.BidiMessagingProtocol;
 import bgu.spl.net.api.MessageEncoderDecoder;
 import bgu.spl.net.api.MessagingProtocol;
 import java.io.BufferedInputStream;
@@ -10,7 +11,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class BlockingConnectionHandler<T> implements Runnable, ConnectionHandler<T> {
 
-    private final MessagingProtocol<T> protocol;
+    private final BidiMessagingProtocol<T> protocol;
     private final MessageEncoderDecoder<T> encdec;
     private final Socket sock;
     private BufferedInputStream in;
@@ -18,7 +19,7 @@ public class BlockingConnectionHandler<T> implements Runnable, ConnectionHandler
     private volatile boolean connected;
     private ConcurrentLinkedQueue<T> responses;
 
-    public BlockingConnectionHandler(Socket sock, MessageEncoderDecoder<T> reader, MessagingProtocol<T> protocol) {
+    public BlockingConnectionHandler(Socket sock, MessageEncoderDecoder<T> reader, BidiMessagingProtocol<T> protocol) {
         this.sock = sock;
         this.encdec = reader;
         this.protocol = protocol;
@@ -26,13 +27,15 @@ public class BlockingConnectionHandler<T> implements Runnable, ConnectionHandler
 
     @Override
     public void run() {
-        try (Socket sock = this.sock) { //just for automatic closing
-            int read;
+        try (Socket sock = this.sock) 
+        { // just for automatic closing. 
+          //In class they recommended to put the Buffered inside the try with resource but the problem here 
+          //is that need the in & out as fields, so we can use them again in send()
+             in = new BufferedInputStream(sock.getInputStream());
+             out = new BufferedOutputStream(sock.getOutputStream()); 
 
-            in = new BufferedInputStream(sock.getInputStream());
-            out = new BufferedOutputStream(sock.getOutputStream());
             connected = true;
-            
+            int read;
 
             while (!protocol.shouldTerminate() && connected && (read = in.read()) >= 0) {
                 T nextMessage = encdec.decodeNextByte((byte) read);
@@ -40,8 +43,6 @@ public class BlockingConnectionHandler<T> implements Runnable, ConnectionHandler
                     protocol.process(nextMessage);
                 }
             }
-
-            
 
         } catch (IOException ex) {
             ex.printStackTrace();
@@ -58,7 +59,7 @@ public class BlockingConnectionHandler<T> implements Runnable, ConnectionHandler
     @Override
     public void send(T msg) {
         try {
-            T response = (T) responses.poll();
+            T response = (T) responses.poll(); //needs to insert somewhere in the process/encode the message recieved inside this Q
             if (response != null) {
                 out.write(encdec.encode(response));
                 out.flush();

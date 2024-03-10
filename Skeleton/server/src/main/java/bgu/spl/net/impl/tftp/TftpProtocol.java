@@ -28,7 +28,10 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     private short opCode;
     String directoryPath = "Skeleton/server/Files";
     public FileOperations files = new FileOperations(directoryPath); //path to Files folder inside the project
-    private u
+    private byte[] uploadFile;
+    private int blocksSent;
+    private String uploadingFileName;
+    private int expectedBlocks;
 
     //OpCode fields
     short op_RRQ = 1; short op_WRQ = 2; short op_DATA = 3; short op_ACK = 4; short op_ERROR = 5;
@@ -42,6 +45,9 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
         connectionId = _connectionId;
         connections = _connections;
         shouldTerminate = false;
+        uploadFile = new byte[1<<10];
+        blocksSent = 0;
+        expectedBlocks = 0;
     }
 
     @Override
@@ -72,10 +78,48 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
             }
         }
         else if(opCode == op_DATA){
-            byte[] data = Arrays.copyOfRange(message, 2, message.length -1);
+            short packSize = (short)(((short)message[2] & 0xFF)<<8|(short)(message[3] & 0xFF));
+            short blockNum = (short)(((short)message[4] & 0xFF)<<8|(short)(message[3] & 0xFF));
+            byte[] data = Arrays.copyOfRange(message, 6, 6+packSize);
 
+            if (packSize < 512){
+                expectedBlocks = blockNum;
+            }
 
+            if (packSize + blocksSent*512 > uploadFile.length){ // in case uploadFile array is not big enough
+                byte[] temp = new byte[uploadFile.length*2];
+                System.arraycopy(uploadFile, 0, temp, 0, uploadFile.length);
+                uploadFile = temp;
+            }
 
+            // add data to uploadFile
+            System.arraycopy(data, 0, uploadFile, blocksSent*512, packSize);
+            blocksSent++;
+
+            // send ACK that data packet was received 
+            byte[] msgACK = new byte[4];
+            msgACK[0] = (byte) (op_ACK >> 8);
+            msgACK[1] = (byte) (op_ACK & 0xff);
+            msgACK[2] = (byte) (blockNum >> 8 );
+            msgACK[3] = (byte) (blockNum & 0xff);
+            connections.send(connectionId, msgACK);
+
+            // if all the blocks were sent 
+            if (expectedBlocks == blocksSent){
+                files.writeFile(uploadingFileName, uploadFile);
+                uploadFile = new byte[1<<10];
+                blocksSent = 0;
+                expectedBlocks = 0;
+                byte[] filenameBytes = uploadingFileName.getBytes();
+                byte[] msgBCAST = new byte[3 + filenameBytes.length];
+                msgBCAST[0] = (byte) (op_BCAST >> 8);
+                msgBCAST[1] = (byte) (op_BCAST & 0xff);
+                msgBCAST[2] = (byte) ((short) 0 >> 8);
+                System.arraycopy(filenameBytes, 0, msgBCAST, 3, filenameBytes.length);
+                for( Integer id : holder.ids_login.keySet()){
+                    connections.send(id, msgBCAST); // sends the BCAST to all login clients
+                }
+            }
         }
         else if(opCode == op_DELRQ){
             String filename = new String(message, 2, message.length - 1, StandardCharsets.UTF_8); // -1 beacuse last char is 0
@@ -160,21 +204,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                     msgACK[2] = (byte) ((short) 0 >> 8 );
                     msgACK[3] = (byte) ((short) 0 & 0xff);
                     connections.send(connectionId, msgACK);
-                    
-                    //needs to move it inside else if block of opCode == op_DATA
-                    byte[] uploadFile = Arrays.copyOfRange(message, 2, message.length -1);
-                    files.writeFile(filename, uploadFile);
-                    
-
-                    byte[] filenameBytes = filename.getBytes();
-                    byte[] msgBCAST = new byte[3 + filename.length()];
-                    msgBCAST[0] = (byte) (op_BCAST >> 8);
-                    msgBCAST[1] = (byte) (op_BCAST & 0xff);
-                    msgBCAST[2] = (byte) ((short) 0 >> 8);
-                    System.arraycopy(filenameBytes, 0, msgBCAST, 3, filenameBytes.length);
-                    for( Integer id : holder.ids_login.keySet()){
-                        connections.send(id, msgBCAST); // sends the BCAST to all login clients
-                    }
+                    uploadingFileName = filename;
                 }
                 else
                 {
@@ -187,8 +217,6 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                     msgERROR[3] = (byte) (op_WRQ & 0xff);
                     System.arraycopy(errorByte, 0, msgERROR, 4 , errorByte.length); 
                     connections.send(connectionId, msgERROR);
-                
-                
             }
             
         }
@@ -252,13 +280,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
 
             pos+=512;
             blockNum++;
-        }
-    }
+         }
+    }
 
-    public byte[] unpackDataPacket() {
-        
-
-    }
-    
 }
-
