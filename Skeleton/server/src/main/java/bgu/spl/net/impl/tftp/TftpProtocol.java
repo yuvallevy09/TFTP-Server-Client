@@ -27,9 +27,8 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     private Connections<byte[]> connections;
     private boolean shouldTerminate;
     private short opCode;
-    //not sure if fileOperations should be here
-    public FileOperations files = new FileOperations("server/Files"); //path to Files folder inside the project
-    //not sure if fileOperations should be here
+    String directoryPath = "Skeleton/server/Files";
+    public FileOperations files = new FileOperations(directoryPath); //path to Files folder inside the project
 
     //OpCode fields
     short op_RRQ = 1; short op_WRQ = 2; short op_DATA = 3; short op_ACK = 4; short op_ERROR = 5;
@@ -50,8 +49,8 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
         // TODO implement this
         opCode = (short)(((short)message[0] & 0xFF)<<8|(short)(message[1] & 0xFF)); 
         if(opCode == op_LOGRQ){
-            String username = new String(message, 2, message.length, StandardCharsets.UTF_8);
-            if(!holder.ids_login.containsValue(username)) {
+            String username = new String(message, 2, message.length - 1, StandardCharsets.UTF_8);
+            if(!holder.ids_login.containsValue(username)) { // if username does not exist 
                 holder.ids_login.put(connectionId, username);    
                 byte[] msgACK = new byte[4];
                 msgACK[0] = (byte) (op_ACK >> 8);
@@ -59,10 +58,8 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                 msgACK[2] = (byte) ((short) 0 >> 8 );
                 msgACK[3] = (byte) ((short) 0 & 0xff);
                 connections.send(connectionId, msgACK);
-            }
-            else
-            {
-                String error = "User already logged in" + '0';
+            } else {
+                String error = "User already logged in" + '\0';
                 byte[] errorByte = error.getBytes(); //uses utf8 by default
                 byte[] msgERROR = new byte[4 + errorByte.length];
                 msgERROR[0] = (byte) (op_ERROR >> 8);
@@ -76,16 +73,16 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
         }
         else if(opCode == op_DELRQ){
             String filename = new String(message, 2, message.length - 1, StandardCharsets.UTF_8); // -1 beacuse last char is 0
-                if(files.search(filename)){ //check to see what happend if someone download the file at the moment
-                    boolean isDeleted = files.delete(filename);
+                if(files.searchFile(filename)){ //check to see what happend if someone download the file at the moment
+                    files.deleteFile(filename); //Delete file from directory // see if need to implemenet readers writers lock 
                     byte[] msgACK = new byte[4];
                     msgACK[0] = (byte) (op_ACK >> 8);
                     msgACK[1] = (byte) (op_ACK & 0xff);
                     msgACK[2] = (byte) ((short) 0 >> 8 );
                     msgACK[3] = (byte) ((short) 0 & 0xff);
-                    connections.send(connectionId, msgACK);
+                    connections.send(connectionId, msgACK); // send ack to client that sent request 
 
-                    byte[] filenameBytes = filename.getBytes();
+                    byte[] filenameBytes = filename.getBytes(); 
                     byte[] msgBCAST = new byte[3 + filename.length()];
                     msgBCAST[0] = (byte) (op_BCAST >> 8);
                     msgBCAST[1] = (byte) (op_BCAST & 0xff);
@@ -94,11 +91,8 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                     for( Integer id : holder.ids_login.keySet()){
                         connections.send(id, msgBCAST); // sends the BCAST to all login clients
                     }
-                    
-                }           
-                else
-                {
-                    String error = filename +  " not found" + '0';
+                } else {
+                    String error = filename +  " not found" + '\0'; 
                     byte[] errorByte = error.getBytes(); //uses utf8 by default
                     byte[] msgERROR = new byte[4 + errorByte.length];
                     msgERROR[0] = (byte) (op_ERROR >> 8);
@@ -113,75 +107,60 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
         else if(opCode == op_DIRQ){
             if(!files.isEmpty()){
                 List<String> filesList = files.getAllFiles();
-                //needs to send packet here of all files
-                //need to send all of the directory to the client
-                //need to send ACK to the client for each packet he send with the block number
+                String namesList;
+                byte[] namesArr = namesList.getBytes();
+                sendDataPackets(namesArr);
             }
             else
             {
-                String error = "There are no files" + '0';
+                String error = "Nothing." + '\0';
                 byte[] errorByte = error.getBytes(); //uses utf8 by default
                 byte[] msgERROR = new byte[4 + errorByte.length];
                 msgERROR[0] = (byte) (op_ERROR >> 8);
                 msgERROR[1] = (byte) (op_ERROR & 0xff);
                 msgERROR[2] = (byte) (op_DIRQ >> 8);
                 msgERROR[3] = (byte) (op_DIRQ & 0xff);
+
+                System.arraycopy(errorByte, 0, msgERROR, 4 , errorByte.length); 
                 connections.send(connectionId, msgERROR);
             }
 
         }
         else if(opCode == op_RRQ){
             String filename = new String(message, 2, message.length - 1, StandardCharsets.UTF_8);
-            try {
-                if(files.search(filename)){
-                    byte[] downaloadFile = files.readFile(filename);
-                    //send ACK
-                //downaload the file to the client by packets
+                if(files.searchFile(filename)){
+                    sendDataPackets(files.readFile(filename)); // helper functions
                 }
                 else
                 {
-                    String error = "File not found" + '0';
+                    String error = "deleted created file." + '\0';
                     byte[] errorByte = error.getBytes(); //uses utf8 by default
                     byte[] msgERROR = new byte[4 + errorByte.length];
                     msgERROR[0] = (byte) (op_ERROR >> 8);
                     msgERROR[1] = (byte) (op_ERROR & 0xff);
                     msgERROR[2] = (byte) (op_RRQ >> 8);
                     msgERROR[3] = (byte) (op_RRQ & 0xff);
+
+                    System.arraycopy(errorByte, 0, msgERROR, 4 , errorByte.length); 
                     connections.send(connectionId, msgERROR);
                 }
-            
-            } catch (IOException ex) {
-            ex.printStackTrace();
-            }
-    
             
         }
         else if(opCode == op_WRQ){
             String filename = new String(message, 2, message.length - 1, StandardCharsets.UTF_8);
-            try {
-                if(!files.search(filename)){
-                    byte[] uploadFile = Arrays.copyOfRange(message, 2, message.length -1); // copy the file name 
-                    files.writeFile(filename, message); // not sure about the method
+                if(!files.searchFile(filename)){
                     byte[] msgACK = new byte[4];
                     msgACK[0] = (byte) (op_ACK >> 8);
                     msgACK[1] = (byte) (op_ACK & 0xff);
                     msgACK[2] = (byte) ((short) 0 >> 8 );
                     msgACK[3] = (byte) ((short) 0 & 0xff);
                     connections.send(connectionId, msgACK);
-    
-    
-                }
-                else
-                {
-                    String error = "File already exists" + '0';
-                    byte[] errorByte = error.getBytes(); //uses utf8 by default
-                    byte[] msgERROR = new byte[4 + errorByte.length];
-                    msgERROR[0] = (byte) (op_ERROR >> 8);
-                    msgERROR[1] = (byte) (op_ERROR & 0xff);
-                    msgERROR[2] = (byte) (op_WRQ >> 8);
-                    msgERROR[3] = (byte) (op_WRQ & 0xff);
-                    connections.send(connectionId, msgERROR);
-    
+                    
+                    //needs to move it inside else if block of opCode == op_DATA
+                    byte[] uploadFile = Arrays.copyOfRange(message, 2, message.length -1);
+                    files.writeFile(filename, uploadFile);
+                    
+
                     byte[] filenameBytes = filename.getBytes();
                     byte[] msgBCAST = new byte[3 + filename.length()];
                     msgBCAST[0] = (byte) (op_BCAST >> 8);
@@ -192,16 +171,26 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                         connections.send(id, msgBCAST); // sends the BCAST to all login clients
                     }
                 }
+                else
+                {
+                    String error = "stop transfer." + '\0';
+                    byte[] errorByte = error.getBytes(); //uses utf8 by default
+                    byte[] msgERROR = new byte[4 + errorByte.length];
+                    msgERROR[0] = (byte) (op_ERROR >> 8);
+                    msgERROR[1] = (byte) (op_ERROR & 0xff);
+                    msgERROR[2] = (byte) (op_WRQ >> 8);
+                    msgERROR[3] = (byte) (op_WRQ & 0xff);
+                    System.arraycopy(errorByte, 0, msgERROR, 4 , errorByte.length); 
+                    connections.send(connectionId, msgERROR);
                 
-            } catch (IOException ex) {
-                ex.printStackTrace();
+                
             }
             
         }
         else if(opCode == op_DISC)
         {
             String username = new String(message, 2, message.length, StandardCharsets.UTF_8);
-            if(holder.ids_login.containsValue(username)){
+            if(holder.ids_login.containsValue(username)){ // check if this condition is right 
                 holder.ids_login.remove(connectionId); // check if possible to remove by Value and not by Key
                 byte[] msgACK = new byte[4];
                 msgACK[0] = (byte) (op_ACK >> 8);
@@ -209,17 +198,20 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                 msgACK[2] = (byte) ((short) 0 >> 8 );
                 msgACK[3] = (byte) ((short) 0 & 0xff);
                 connections.send(connectionId, msgACK);
+                connections.disconnect(connectionId);
+                shouldTerminate = true;
                 //needs to close the program for the client that asked to disconnect
             }
             else
             {
-                String error = "Username is not logged in" + '0';
+                String error = "Don’t exit the program." + '\0';
                 byte[] errorByte = error.getBytes(); //uses utf8 by default
                 byte[] msgERROR = new byte[4 + errorByte.length];
                 msgERROR[0] = (byte) (op_ERROR >> 8);
                 msgERROR[1] = (byte) (op_ERROR & 0xff);
                 msgERROR[2] = (byte) (op_DISC >> 8);
                 msgERROR[3] = (byte) (op_DISC & 0xff);
+                System.arraycopy(errorByte, 0, msgERROR, 4 , errorByte.length); 
                 connections.send(connectionId, msgERROR);
             }   
         }
@@ -228,11 +220,34 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
 
     @Override
     public boolean shouldTerminate() {
-        // TODO implement this
-        
-       connections.disconnect(connectionId); //not sure it needs to be here
-       //needs to remove here the client from the logged in list
        return shouldTerminate;
+    }
+
+
+    public void sendDataPackets(byte[] file) {
+        int pos = 0; 
+        short blockNum = 0; // check that does not need to start at 1 if there's multiple packets
+        short packetSize;
+        while (pos < file.length) {
+            if (pos + 512 < file.length) {
+                packetSize = 512;
+            } else {
+                packetSize =  (short) (file.length - pos);
+            }
+
+            byte[] msgDATA = new byte[6 + packetSize];
+            msgDATA[0] = (byte) (op_DATA >> 8);
+            msgDATA[1] = (byte) (op_DATA & 0xff);
+            msgDATA[2] = (byte) (packetSize >> 8);
+            msgDATA[3] = (byte) (packetSize & 0xff);
+            msgDATA[4] = (byte) (blockNum >> 8);
+            msgDATA[5] = (byte) (blockNum & 0xff);
+            System.arraycopy(file, pos, msgDATA, 6 , packetSize); 
+            connections.send(connectionId, msgDATA);
+
+            pos+=512;
+            blockNum++;
+        }
     }
     
 }

@@ -6,7 +6,7 @@ import bgu.spl.net.api.MessageEncoderDecoder;
 
 public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
     //TODO: Implement here the TFTP encoder and decoder
-    private byte[] bytes = new byte[1<<10]; // start with 1K
+    private byte[] bytes = new byte[1<<9]; // start with 512 bytes.
     private int length = 0;
     private short opCode = 0;
     private int dataSize;

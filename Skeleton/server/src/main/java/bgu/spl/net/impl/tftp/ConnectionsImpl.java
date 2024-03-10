@@ -9,6 +9,7 @@ public class ConnectionsImpl<T> implements Connections<T> {
     public
     void disconnect(int connectionId){
         connections.remove(connectionId);
+        holder.ids_login.remove(connectionId);
     }
 
     @Override
