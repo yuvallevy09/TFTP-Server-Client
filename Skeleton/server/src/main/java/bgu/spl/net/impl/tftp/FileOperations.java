@@ -1,5 +1,4 @@
-package bgu.spl.net.impl.tftp.files;
-
+package bgu.spl.net.impl.tftp;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -75,20 +74,14 @@ public class FileOperations{
         return true;
     }
 
-    public List<String> getAllFiles(){
-        List<String> fileList = new ArrayList<>();
-            File[] files = filesDirectory.listFiles();
-            for(File file : files){
-                if(file.isFile()){
-                    fileList.add(file.getName());
-                }
+    public String getAllFiles() {
+        StringBuffer fileList = new StringBuffer(); //Thread safe, if not neccesary we can use StringBuilder
+        File[] files = filesDirectory.listFiles();
+        for (File file : files) {
+            if (file.isFile()) {
+                fileList.append(file.getName()).append("\n");
             }
-
-        return fileList;
+        }
+        return fileList.toString();
     }
-
-
-
-
-
 }

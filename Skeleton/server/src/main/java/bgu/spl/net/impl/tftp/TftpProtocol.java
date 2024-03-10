@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import bgu.spl.net.api.BidiMessagingProtocol;
-import bgu.spl.net.impl.tftp.files.FileOperations;
 import bgu.spl.net.srv.Connections;
 
 //Added by Tomer
@@ -29,6 +28,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     private short opCode;
     String directoryPath = "Skeleton/server/Files";
     public FileOperations files = new FileOperations(directoryPath); //path to Files folder inside the project
+    private u
 
     //OpCode fields
     short op_RRQ = 1; short op_WRQ = 2; short op_DATA = 3; short op_ACK = 4; short op_ERROR = 5;
@@ -71,6 +71,12 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                 connections.send(connectionId, msgERROR);
             }
         }
+        else if(opCode == op_DATA){
+            byte[] data = Arrays.copyOfRange(message, 2, message.length -1);
+
+
+
+        }
         else if(opCode == op_DELRQ){
             String filename = new String(message, 2, message.length - 1, StandardCharsets.UTF_8); // -1 beacuse last char is 0
                 if(files.searchFile(filename)){ //check to see what happend if someone download the file at the moment
@@ -106,9 +112,8 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
         }
         else if(opCode == op_DIRQ){
             if(!files.isEmpty()){
-                List<String> filesList = files.getAllFiles();
-                String namesList;
-                byte[] namesArr = namesList.getBytes();
+                String filesList = files.getAllFiles();
+                byte[] namesArr = filesList.getBytes();
                 sendDataPackets(namesArr);
             }
             else
@@ -248,6 +253,11 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
             pos+=512;
             blockNum++;
         }
+    }
+
+    public byte[] unpackDataPacket() {
+        
+
     }
     
 }
