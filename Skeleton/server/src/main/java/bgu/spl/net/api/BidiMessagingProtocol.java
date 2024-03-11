@@ -1,7 +1,7 @@
 package bgu.spl.net.api;
 
-import bgu.spl.net.impl.tftp.ConnectionsImpl;
 import bgu.spl.net.srv.Connections;
+import bgu.spl.net.srv.ConnectionsImpl;
 
 public interface BidiMessagingProtocol<T>  {
 	/**

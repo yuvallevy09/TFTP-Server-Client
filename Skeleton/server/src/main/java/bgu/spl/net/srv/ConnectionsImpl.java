@@ -1,7 +1,7 @@
-package bgu.spl.net.impl.tftp;
+package bgu.spl.net.srv;
 import java.util.concurrent.ConcurrentHashMap;
 
-import bgu.spl.net.srv.BlockingConnectionHandler;
+import bgu.spl.net.impl.tftp.holder;
 
 public class ConnectionsImpl<T> implements Connections<T> {
 
@@ -22,6 +22,7 @@ public class ConnectionsImpl<T> implements Connections<T> {
     @Override
     public boolean send(int connectionId, T msg) {
         //connections.get(connectionId).responses.add(msg);
+        System.out.println("sending it to the right CH");
         connections.get(connectionId).send(msg);
         return true;
     }

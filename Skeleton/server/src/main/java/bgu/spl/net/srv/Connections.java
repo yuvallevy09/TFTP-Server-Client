@@ -7,7 +7,7 @@ public interface Connections<T> {
 
     //public ConcurrentHashMap<Integer, ConnectionHandler<byte[]>> connections = new ConcurrentHashMap<>();
 
-	void connect(int connectionId, ConnectionHandler<T> handler);
+	void connect(int connectionId, BlockingConnectionHandler<T> handler);
 
     boolean send(int connectionId, T msg);
 

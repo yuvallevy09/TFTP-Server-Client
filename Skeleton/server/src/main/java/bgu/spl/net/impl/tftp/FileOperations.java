@@ -79,7 +79,7 @@ public class FileOperations{
         File[] files = filesDirectory.listFiles();
         for (File file : files) {
             if (file.isFile()) {
-                fileList.append(file.getName()).append("\n");
+                fileList.append(file.getName()).append('\0');
             }
         }
         return fileList.toString();

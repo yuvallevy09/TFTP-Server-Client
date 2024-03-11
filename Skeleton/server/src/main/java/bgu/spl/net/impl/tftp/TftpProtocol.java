@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import bgu.spl.net.api.BidiMessagingProtocol;
 import bgu.spl.net.srv.Connections;
+import bgu.spl.net.srv.ConnectionsImpl;
 
 //Added by Tomer
 // import java.io.IOException;
@@ -14,9 +15,9 @@ import bgu.spl.net.srv.Connections;
 
 
 
-class holder{
-    public static ConcurrentHashMap<Integer, String> ids_login = new ConcurrentHashMap<>(); //Holds all login id_s and username
-}
+// class holder{
+//     public static ConcurrentHashMap<Integer, String> ids_login = new ConcurrentHashMap<>(); //Holds all login id_s and username
+// }
 
 
 public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
@@ -56,11 +57,14 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
         // TODO implement this
         opCode = (short)(((short)message[0] & 0xFF)<<8|(short)(message[1] & 0xFF)); 
         if(opCode == op_LOGRQ){
-            String username = new String(message, 2, message.length - 1, StandardCharsets.UTF_8);
+            System.out.println("enter LOGRQ block");
+            String username = new String(message, 2, message.length - 2, StandardCharsets.UTF_8);
             if(!loggedIn) { // if username does not exist 
-                holder.ids_login.put(connectionId, username);    
+                holder.ids_login.put(connectionId, username); 
+                System.out.println(username + "was inserted to the ids login");   
                 loggedIn = true;
                 byte[] msgACK = packAck((short)0);
+                System.out.println("ACK byte array created successfully");
                 connections.send(connectionId, msgACK);
             } else {
                 String error = "User already logged in" + '\0';
@@ -114,7 +118,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
             }
         }
         else if(opCode == op_DELRQ){
-            String filename = new String(message, 2, message.length - 1, StandardCharsets.UTF_8); // -1 beacuse last char is 0
+            String filename = new String(message, 2, message.length - 2, StandardCharsets.UTF_8); // -1 beacuse last char is 0
                 if(files.searchFile(filename)){ //check to see what happend if someone download the file at the moment
                     files.deleteFile(filename); //Delete file from directory // see if need to implemenet readers writers lock 
                     byte[] msgACK = packAck((short)0);
@@ -146,7 +150,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
             }
         }
         else if(opCode == op_RRQ){ //Download
-            String filename = new String(message, 2, message.length - 1, StandardCharsets.UTF_8);
+            String filename = new String(message, 2, message.length - 2, StandardCharsets.UTF_8);
             if(files.searchFile(filename)){
                 sendDataPackets(files.readFile(filename)); // helper functions
             } else {
@@ -156,7 +160,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
             }
         }
         else if(opCode == op_WRQ){ //Upload
-            String filename = new String(message, 2, message.length - 1, StandardCharsets.UTF_8);
+            String filename = new String(message, 2, message.length - 2, StandardCharsets.UTF_8);
             if(!files.searchFile(filename)){
                 byte[] msgACK = packAck((short) 0);
                 connections.send(connectionId, msgACK);
@@ -183,6 +187,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
             byte[] msgERROR = packError(error);
             connections.send(connectionId, msgERROR);
         }
+        System.out.println("reached end of protocol");
     }
 
     @Override
@@ -237,7 +242,4 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
         }
     }
 
-    public void terminate() {
-        shouldTerminate = true;
-    }
 }

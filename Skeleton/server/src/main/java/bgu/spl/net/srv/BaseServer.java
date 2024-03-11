@@ -2,7 +2,6 @@ package bgu.spl.net.srv;
 
 import bgu.spl.net.api.BidiMessagingProtocol;
 import bgu.spl.net.api.MessageEncoderDecoder;
-import bgu.spl.net.impl.tftp.ConnectionsImpl;
 import bgu.spl.net.impl.tftp.TftpProtocol;
 
 import java.io.IOException;
@@ -19,6 +18,7 @@ public abstract class BaseServer<T> implements Server<T> {
     private ServerSocket sock;
     private final ConnectionsImpl<T> connections;
     private int idCounter;
+    int numOfAccepts = 0; //Flag 
 
     public BaseServer(
             int port,
@@ -31,6 +31,7 @@ public abstract class BaseServer<T> implements Server<T> {
 		this.sock = null;
         connections = new ConnectionsImpl<T>();
         idCounter = 0;
+       
     }
 
     @Override
@@ -42,7 +43,7 @@ public abstract class BaseServer<T> implements Server<T> {
             this.sock = serverSock; //just to be able to close
 
             while (!Thread.currentThread().isInterrupted()) {
-
+                System.out.println("numOf Access" + numOfAccepts);
                 Socket clientSock = serverSock.accept();
 
                 BidiMessagingProtocol<T> protocol = protocolFactory.get();
@@ -54,6 +55,7 @@ public abstract class BaseServer<T> implements Server<T> {
                 connections.connect(idCounter, handler);
                 protocol.start(idCounter++, connections);
                 execute(handler);
+                numOfAccepts++;
             }
         } catch (IOException ex) {
         }
