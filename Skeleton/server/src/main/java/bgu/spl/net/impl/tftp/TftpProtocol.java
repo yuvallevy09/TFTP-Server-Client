@@ -267,7 +267,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
             } else {
                 packetSize =  (short) (file.length - pos);
             }
-
+    
             byte[] msgDATA = new byte[6 + packetSize];
             msgDATA[0] = (byte) (op_DATA >> 8);
             msgDATA[1] = (byte) (op_DATA & 0xff);
@@ -277,10 +277,9 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
             msgDATA[5] = (byte) (blockNum & 0xff);
             System.arraycopy(file, pos, msgDATA, 6 , packetSize); 
             connections.send(connectionId, msgDATA);
-
-            pos+=512;
+    
+            pos += 512;
             blockNum++;
-         }
-    }
-
+        }
+    }
 }
