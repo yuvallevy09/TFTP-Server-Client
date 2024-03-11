@@ -15,13 +15,14 @@ public class BlockingConnectionHandler<T> implements Runnable, ConnectionHandler
     private final Socket sock;
     private BufferedInputStream in;
     private BufferedOutputStream out;
-    private volatile boolean connected;
-    //private ConcurrentLinkedQueue<T> responses;
+    public boolean shouldFinish;
+    //public ConcurrentLinkedQueue<T> responses;
 
     public BlockingConnectionHandler(Socket sock, MessageEncoderDecoder<T> reader, BidiMessagingProtocol<T> protocol) {
         this.sock = sock;
         this.encdec = reader;
         this.protocol = protocol;
+        this.shouldFinish = false;
     }
 
     @Override
@@ -29,29 +30,25 @@ public class BlockingConnectionHandler<T> implements Runnable, ConnectionHandler
         try{ 
             in = new BufferedInputStream(sock.getInputStream());
             out = new BufferedOutputStream(sock.getOutputStream()); 
-            connected = true;
             int read;
 
-            while (!protocol.shouldTerminate() && connected && (read = in.read()) >= 0) {
+            while (!shouldFinish && !protocol.shouldTerminate() && (read = in.read()) >= 0) {
                 T nextMessage = encdec.decodeNextByte((byte) read);
                 if (nextMessage != null) {
                     protocol.process(nextMessage);
                 }
             }
-
+            close();
         } catch (IOException ex) {
             ex.printStackTrace();
         }
-
     }
 
     @Override
     public void close() throws IOException {
-        connected = false;
         sock.close();
         in.close();
         out.close();
-        
     }
 
     @Override
@@ -59,11 +56,14 @@ public class BlockingConnectionHandler<T> implements Runnable, ConnectionHandler
         try {
             //T response = (T) responses.poll(); //needs to insert somewhere in the process/encode the message recieved inside this Q
             if (msg != null) {
-                out.write(encdec.encode(msg));
-                out.flush();
+                synchronized (this){
+                    out.write(encdec.encode(msg));
+                    out.flush();
+                }
             }
         } catch (IOException ex) {
             ex.printStackTrace();
         }
     }
+
 }

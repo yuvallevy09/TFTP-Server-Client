@@ -31,7 +31,6 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
             if(opCode == 9){return decodeBCAST(nextByte);}
             if(opCode == 10){return decodeDISC(nextByte);} 
         }
-
         return null;
     }
 
@@ -76,7 +75,6 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
         }
 
         return null;
-
     }
 
     private byte[] decodeACK(byte nextByte){
@@ -100,8 +98,6 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
             pushByte(nextByte);
             return null;
         }
-      
-
     }
 
     private byte[] decodeDIRQ(byte nextByte){

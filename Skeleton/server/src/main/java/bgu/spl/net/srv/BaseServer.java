@@ -2,12 +2,13 @@ package bgu.spl.net.srv;
 
 import bgu.spl.net.api.BidiMessagingProtocol;
 import bgu.spl.net.api.MessageEncoderDecoder;
-import bgu.spl.net.api.MessagingProtocol;
 import bgu.spl.net.impl.tftp.ConnectionsImpl;
+import bgu.spl.net.impl.tftp.TftpProtocol;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Map;
 import java.util.function.Supplier;
 
 public abstract class BaseServer<T> implements Server<T> {
@@ -16,7 +17,7 @@ public abstract class BaseServer<T> implements Server<T> {
     private final Supplier<BidiMessagingProtocol<T>> protocolFactory;
     private final Supplier<MessageEncoderDecoder<T>> encdecFactory;
     private ServerSocket sock;
-    private Connections<T> connections;
+    private final ConnectionsImpl<T> connections;
     private int idCounter;
 
     public BaseServer(
@@ -28,7 +29,7 @@ public abstract class BaseServer<T> implements Server<T> {
         this.protocolFactory = protocolFactory;
         this.encdecFactory = encdecFactory;
 		this.sock = null;
-        connections = (Connections<T>) new ConnectionsImpl();
+        connections = new ConnectionsImpl<T>();
         idCounter = 0;
     }
 
@@ -56,7 +57,7 @@ public abstract class BaseServer<T> implements Server<T> {
             }
         } catch (IOException ex) {
         }
-
+        
         System.out.println("server closed!!!");
     }
 
@@ -64,7 +65,14 @@ public abstract class BaseServer<T> implements Server<T> {
     public void close() throws IOException {
 		if (sock != null)
 			sock.close();
-    }
+            for (Map.Entry<Integer, BlockingConnectionHandler<T>> entry : connections.connections.entrySet()) {
+                BlockingConnectionHandler<T> handler = entry.getValue();
+                // close all connection handlers and disconnect all clients from server
+                connections.disconnect(entry.getKey());
+                handler.shouldFinish = true;
+            }
+        }
+
 
     protected abstract void execute(BlockingConnectionHandler<T>  handler);
 
