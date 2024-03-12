@@ -21,6 +21,7 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
         else if(length == 1){
             pushByte(nextByte);
             opCode = (short)(((short)bytes[0] & 0xFF)<<8|(short)(bytes[1] & 0xFF)); // Combine bytes into an integer
+            
         }
         else
         {
@@ -30,7 +31,10 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
             if(opCode == 5){return decodeERROR(nextByte);}
             if(opCode == 6){return decodeDIRQ(nextByte);}
             if(opCode == 9){return decodeBCAST(nextByte);}
-            if(opCode == 10){return decodeDISC(nextByte);} 
+            if(opCode == 10){return decodeDISC(nextByte);
+            } else {
+                System.out.println(opCode);
+            } 
         }
         return null;
     }

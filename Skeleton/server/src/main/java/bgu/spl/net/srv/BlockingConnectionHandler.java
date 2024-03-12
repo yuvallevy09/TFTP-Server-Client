@@ -41,16 +41,16 @@ public class BlockingConnectionHandler<T> implements Runnable, ConnectionHandler
             
 
             while (!shouldFinish && !protocol.shouldTerminate() && (read = in.read()) >= 0) {
-                System.out.println("Decoding byte num " + numOfLoops);
+                // System.out.println("Decoding byte num " + numOfLoops);
                 T nextMessage = encdec.decodeNextByte((byte) read);
                 if (nextMessage != null) {
                     String msg = new String((byte[]) nextMessage, StandardCharsets.UTF_8);
-                    System.out.println("message was decoded as: " + msg);
+                    // System.out.println("message was decoded as: " + msg);
                     protocol.process(nextMessage);
-                    System.out.println("message was proccessed, back to BlockingCH while loop");
-                    numOfLoops = -1;
+                    // System.out.println("message was proccessed, back to BlockingCH while loop");
+                    // numOfLoops = -1;
                 }
-                numOfLoops++;
+                // numOfLoops++;
             }
             System.out.println("finished, preparing to close");
             close();

@@ -50,6 +50,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
         // TODO implement this
 
         opCode = (short)(((short)message[0] & 0xFF)<<8|(short)(message[1] & 0xFF)); 
+        System.out.println(opCode);
         if(opCode == op_LOGRQ){
             System.out.println("enter LOGRQ block"); //Flag
             String username = new String(message, 2, message.length - 3, StandardCharsets.UTF_8);
