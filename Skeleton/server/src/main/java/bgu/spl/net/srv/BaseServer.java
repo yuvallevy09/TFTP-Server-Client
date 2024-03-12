@@ -48,6 +48,10 @@ public abstract class BaseServer<T> implements Server<T> {
             if (directoryListing != null) {
                 for (File f : directoryListing) {
                     holder.filesMap.put(f.getName(), f);
+                    // boolean valIsNotNull = holder.filesMap.get(f.getName()) != null;
+                    // if (valIsNotNull){
+                    //     System.out.println(f.getName());
+                    // } 
                 }
             }
 

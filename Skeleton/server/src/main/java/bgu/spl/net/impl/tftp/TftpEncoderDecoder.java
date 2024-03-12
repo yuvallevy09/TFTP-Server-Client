@@ -53,8 +53,10 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
     private byte[] decocdeNormal(byte nextByte){
         if(nextByte == 0){ // check if 0 needs to be sent as part of the message as a sign of end of message
             pushByte(nextByte);
+            byte[] result = new byte[length];
+            System.arraycopy(bytes, 0, result, 0 , length); 
             length = 0;
-            return bytes;
+            return result;
         }
         else{
             pushByte(nextByte);
@@ -74,8 +76,10 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
             pushByte(nextByte);
         }
         if(length == dataSize + 4){
+            byte[] result = new byte[length];
+            System.arraycopy(bytes, 0, result, 0 , length); 
             length = 0;
-            return bytes;
+            return result;
         }
 
         return null;
@@ -84,8 +88,10 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
     private byte[] decodeACK(byte nextByte){
         pushByte(nextByte);
         if(length == 4){
+            byte[] result = new byte[length];
+            System.arraycopy(bytes, 0, result, 0 , length); 
             length = 0;
-            return bytes;
+            return result;
         }
         return null;
     }
@@ -97,8 +103,10 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
         }
         if(nextByte == 0){
             pushByte(nextByte);
+            byte[] result = new byte[length];
+            System.arraycopy(bytes, 0, result, 0 , length); 
             length = 0;
-            return bytes;
+            return result;
         }
         else{
             pushByte(nextByte);
@@ -107,8 +115,10 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
     }
 
     private byte[] decodeDIRQ(byte nextByte){
+        byte[] result = new byte[length];
+        System.arraycopy(bytes, 0, result, 0 , length); 
         length = 0;
-        return bytes;
+        return result;
     }
 
     private byte[] decodeBCAST(byte nextByte){
@@ -118,8 +128,10 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
         }
         if(nextByte == 0){
             pushByte(nextByte);
+            byte[] result = new byte[length];
+            System.arraycopy(bytes, 0, result, 0 , length); 
             length = 0;
-            return bytes; // check if 0 needs to be sent as part of the message as a sign of end of message
+            return result;
         }
         pushByte(nextByte);
         return null;
@@ -127,8 +139,10 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
     }
 
     private byte[] decodeDISC(byte nextByte){
+        byte[] result = new byte[length];
+        System.arraycopy(bytes, 0, result, 0 , length); 
         length = 0;
-        return bytes;
+        return result;
     }
 
 }
