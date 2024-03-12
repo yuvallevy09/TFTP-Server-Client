@@ -16,13 +16,14 @@ public class ConnectionsImpl<T> implements Connections<T> {
 
     @Override
     public void connect(int connectionId, BlockingConnectionHandler<T> handler) {
-        connections.put(connectionId, handler);    
+        connections.put(connectionId, handler);
+        System.out.println("user " + connectionId + " was connected and added to connections");
     }
 
     @Override
     public boolean send(int connectionId, T msg) {
         //connections.get(connectionId).responses.add(msg);
-        System.out.println("sending it to the right CH");
+        System.out.println("sending message to: " + connectionId);
         connections.get(connectionId).send(msg);
         return true;
     }

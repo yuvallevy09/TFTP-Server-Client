@@ -3,7 +3,9 @@ package bgu.spl.net.srv;
 import bgu.spl.net.api.BidiMessagingProtocol;
 import bgu.spl.net.api.MessageEncoderDecoder;
 import bgu.spl.net.impl.tftp.TftpProtocol;
+import bgu.spl.net.impl.tftp.holder;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -39,13 +41,21 @@ public abstract class BaseServer<T> implements Server<T> {
 
         try (ServerSocket serverSock = new ServerSocket(port)) {
 			System.out.println("Server started");
+            
+            //put all existing files in server on filesMap
+            File dir = new File("Skeleton/server/Files");
+            File[] directoryListing = dir.listFiles();
+            if (directoryListing != null) {
+                for (File f : directoryListing) {
+                    holder.filesMap.put(f.getName(), f);
+                }
+            }
 
             this.sock = serverSock; //just to be able to close
 
             while (!Thread.currentThread().isInterrupted()) {
-                System.out.println("numOf Access" + numOfAccepts);
                 Socket clientSock = serverSock.accept();
-
+                System.out.println("num Of Accepts" + numOfAccepts);
                 BidiMessagingProtocol<T> protocol = protocolFactory.get();
 
                 BlockingConnectionHandler<T> handler = new BlockingConnectionHandler<>(
@@ -55,10 +65,12 @@ public abstract class BaseServer<T> implements Server<T> {
                 connections.connect(idCounter, handler);
                 protocol.start(idCounter++, connections);
                 execute(handler);
+                System.out.println("handler thread started");
                 numOfAccepts++;
             }
         } catch (IOException ex) {
         }
+        
         
         System.out.println("server closed!!!");
     }

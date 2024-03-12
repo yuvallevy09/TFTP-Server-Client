@@ -2,10 +2,15 @@ package bgu.spl.net.srv;
 
 import bgu.spl.net.api.BidiMessagingProtocol;
 import bgu.spl.net.api.MessageEncoderDecoder;
+import bgu.spl.net.impl.tftp.TftpEncoderDecoder;
+import bgu.spl.net.impl.tftp.TftpProtocol;
+import bgu.spl.net.impl.tftp.holder;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class BlockingConnectionHandler<T> implements Runnable, ConnectionHandler<T> {
@@ -36,17 +41,18 @@ public class BlockingConnectionHandler<T> implements Runnable, ConnectionHandler
             
 
             while (!shouldFinish && !protocol.shouldTerminate() && (read = in.read()) >= 0) {
-                System.out.println("loop number " + numOfLoops);
-                System.out.println("before decoding");
+                System.out.println("Decoding byte num " + numOfLoops);
                 T nextMessage = encdec.decodeNextByte((byte) read);
                 if (nextMessage != null) {
-                    System.out.println("decode was a success");
+                    String msg = new String((byte[]) nextMessage, StandardCharsets.UTF_8);
+                    System.out.println("message was decoded as: " + msg);
                     protocol.process(nextMessage);
-                    System.out.println("finished with the protocol, back at BlockingCH class");
-                    numOfLoops++;
+                    System.out.println("message was proccessed, back to BlockingCH while loop");
+                    numOfLoops = -1;
                 }
+                numOfLoops++;
             }
-            System.out.println("finished the loop, preparing to close");
+            System.out.println("finished, preparing to close");
             close();
         } catch (IOException ex) {
             ex.printStackTrace();
@@ -66,10 +72,10 @@ public class BlockingConnectionHandler<T> implements Runnable, ConnectionHandler
             //T response = (T) responses.poll(); //needs to insert somewhere in the process/encode the message recieved inside this Q
             if (msg != null) {
                 synchronized (this){
-                    System.out.println("reached send method of connection handler");
+                    System.out.println("writing to buffer of  (fill in later)");
                     out.write(encdec.encode(msg));
-                    System.out.println("encoded the message successfully");
                     out.flush();
+                    System.out.println("message sent!");
                 }
             }
         } catch (IOException ex) {
