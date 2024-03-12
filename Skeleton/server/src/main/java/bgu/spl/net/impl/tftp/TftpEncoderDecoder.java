@@ -21,7 +21,8 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
         else if(length == 1){
             pushByte(nextByte);
             opCode = (short)(((short)bytes[0] & 0xFF)<<8|(short)(bytes[1] & 0xFF)); // Combine bytes into an integer
-            
+            if(opCode == 6){return decodeDIRQ(nextByte);}
+            if(opCode == 10){return decodeDISC(nextByte);} 
         }
         else
         {
@@ -29,12 +30,8 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
             if(opCode == 3){return decodeDATA(nextByte);}
             if(opCode == 4){return decodeACK(nextByte);}
             if(opCode == 5){return decodeERROR(nextByte);}
-            if(opCode == 6){return decodeDIRQ(nextByte);}
             if(opCode == 9){return decodeBCAST(nextByte);}
-            if(opCode == 10){return decodeDISC(nextByte);
-            } else {
-                System.out.println(opCode);
-            } 
+            
         }
         return null;
     }
@@ -76,10 +73,11 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
             pushByte(nextByte);
             dataSize = (short)(((short)bytes[2] & 0xFF)<<8|(short)(bytes[3] & 0xFF)); // Packet DATA size
         }
-        else if(length < dataSize + 4){
+        else if(length < dataSize + 6){
             pushByte(nextByte);
         }
-        if(length == dataSize + 4){
+        if(length == dataSize + 6){
+            pushByte(nextByte);
             byte[] result = new byte[length];
             System.arraycopy(bytes, 0, result, 0 , length); 
             length = 0;
