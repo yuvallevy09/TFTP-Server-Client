@@ -33,6 +33,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     @Override
     public void start(int _connectionId, ConnectionsImpl<byte[]> _connections) {
         // TODO implement this
+        
         connectionId = _connectionId;
         connections = _connections;
         shouldTerminate = false;
@@ -47,6 +48,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     @Override
     public void process(byte[] message){
         // TODO implement this
+
         opCode = (short)(((short)message[0] & 0xFF)<<8|(short)(message[1] & 0xFF)); 
         if(opCode == op_LOGRQ){
             System.out.println("enter LOGRQ block"); //Flag
@@ -80,15 +82,18 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
         }
         else if(opCode == op_ACK){
             short blockNum = (short)(((short)message[2] & 0xFF)<<8|(short)(message[3] & 0xFF));
-            if (blockNum > 0) { // if a data packet was ack (from rrq)
+            if (blockNum > 0) { // if a data packet was acknowledged (from RRQ or DIRQ)
                 if(pos < sendingFile.length) {
                     sendNextPack();
                 } else { // all of the content was sent
+                    System.out.println("num of blocks sent: " + (block - 1)); //Flag
+                    System.out.println("num of acks received: " + blockNum); //Flag
+
                     block = 1;
                     pos = 0;
                 }
             }
-            // see what we need to do in case of ack not for rrq
+            // see what we need to do in case of ack not for data packet
         }
         else if(opCode == op_DATA){
             System.out.println("enter DATA block"); //Flag
@@ -147,16 +152,14 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                 }
             }
         }
-        else if(opCode == op_DELRQ){
+        else if(opCode == op_DELRQ) {
             System.out.println("enter DELRQ block"); //Flag
             String filename = new String(message, 2, message.length - 3, StandardCharsets.UTF_8); 
-            if(holder.filesMap.containsKey(filename)){ //check to see what happend if someone download the file at the moment
-                // String path = holder.filesMap.remove(filename);
-                // File f = new File(path);
+            if(holder.filesMap.containsKey(filename)){ 
                 File f = holder.filesMap.remove(filename);
                 try {
-                Files.delete(f.toPath());
-                System.out.println("file " + filename + "deleted!");
+                    Files.delete(f.toPath());
+                    System.out.println("file " + filename + "deleted!");
                 } catch (NoSuchFileException x) {
                     System.err.format("%s: no such" + " file or directory%n", f.toPath());
                 } catch (DirectoryNotEmptyException x) {
@@ -193,8 +196,8 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                 for(String filename : holder.filesMap.keySet()){
                     filesList+= filename.concat("\0");
                 } 
-                byte[] namesArr = filesList.getBytes();
-                sendDataPackets(namesArr);
+                sendingFile = filesList.getBytes();
+                sendNextPack();
             } else {
                 String error = "Nothing." + '\0';
                 byte[] msgERROR = packError(error);
@@ -204,28 +207,9 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
         else if(opCode == op_RRQ){ //Download
             System.out.println("enter RRQ block"); //Flag
             String filename = new String(message, 2, message.length - 3, StandardCharsets.UTF_8);
-            // System.out.println("message length is " + message.length);
-            // System.out.println("searching for " + filename);
 
-            // System.out.println("Map current holds: ");
-            
-            // for(String name : holder.filesMap.keySet()){
-            //     System.out.println(name + " " + holder.filesMap.get(name));
-            //     if (filename.equals(name)) {
-            //         System.out.println("Equals");
-            //     }
-            // }
-            
-            // String p = holder.filesMap.get(filename);
-            // System.out.println(p + " vs Skeleton/server/Files/" + filename);
-            // System.out.println(new File("Skeleton/server/Files/" + filename).exists());
-            // System.out.println(holder.filesMap.get(filename));
-
-
-            if(new File("Skeleton/server/Files/" + filename).exists()){
+            if(holder.filesMap.containsKey(filename)){
                 System.out.println(filename + " found in filesMap"); // Flag
-                // String path = holder.filesMap.get(filename);
-                // File f = new File(path);
                 File f = holder.filesMap.get(filename);
                 try {
                     sendingFile = Files.readAllBytes(f.toPath());
@@ -234,7 +218,6 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                     e.printStackTrace();
                 }
                 sendNextPack();
-                //sendDataPackets(fileBytes); // helper functions
             } else {
                 System.out.println(filename + " not found in map"); //Flag
                 String error = "deleted created file." + '\0';
