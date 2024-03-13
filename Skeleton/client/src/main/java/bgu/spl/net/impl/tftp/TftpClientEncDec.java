@@ -27,6 +27,8 @@ public class TftpClientEncDec implements MessageEncoderDecoder<byte[]> {
         else if(length == 1){
             pushByte(nextByte);
             opCode = (short)(((short)bytes[0] & 0xFF)<<8|(short)(bytes[1] & 0xFF)); // Combine bytes into an integer
+            if(opCode == 6){return decodeDIRQ(nextByte);}
+            if(opCode == 10){return decodeDISC(nextByte);} 
         }
         else
         {
@@ -34,9 +36,8 @@ public class TftpClientEncDec implements MessageEncoderDecoder<byte[]> {
             if(opCode == 3){return decodeDATA(nextByte);}
             if(opCode == 4){return decodeACK(nextByte);}
             if(opCode == 5){return decodeERROR(nextByte);}
-            if(opCode == 6){return decodeDIRQ(nextByte);}
             if(opCode == 9){return decodeBCAST(nextByte);}
-            if(opCode == 10){return decodeDISC(nextByte);} 
+            
         }
         return null;
     }
@@ -51,12 +52,12 @@ public class TftpClientEncDec implements MessageEncoderDecoder<byte[]> {
         }
 
         switch(request) {
-            case "LOG": return encodeLOG(message);
-            case "DEL": return encodeDEL(message);
+            case "LOG": return encodeLOGRQ(message);
+            case "DEL": return encodeDELRQ(message);
             case "RRQ": return encodeRRQ(message);
             case "WRQ": return encodeWRQ(message);
-            case "DIR": return encodeDIR();
-            case "DIS": return encodeDIS();
+            case "DIR": return encodeDIRC();
+            case "DIS": return encodeDISC();
             default: return message; // check if this is correct 
         }
     }
@@ -79,12 +80,15 @@ public class TftpClientEncDec implements MessageEncoderDecoder<byte[]> {
     private byte[] decocdeNormal(byte nextByte){
         if(nextByte == 0){ // check if 0 needs to be sent as part of the message as a sign of end of message
             pushByte(nextByte);
-            return bytes;
+            byte[] result = new byte[length];
+            System.arraycopy(bytes, 0, result, 0 , length); 
+            length = 0;
+            return result;
         }
         else{
             pushByte(nextByte);
             return null;
-        }    
+        }   
     }
 
     private byte[] decodeDATA(byte nextByte){
@@ -95,11 +99,15 @@ public class TftpClientEncDec implements MessageEncoderDecoder<byte[]> {
             pushByte(nextByte);
             dataSize = (short)(((short)bytes[2] & 0xFF)<<8|(short)(bytes[3] & 0xFF)); // Packet DATA size
         }
-        else if(length < dataSize + 4){
+        else if(length < dataSize + 6){
             pushByte(nextByte);
         }
-        if(length == dataSize + 4){
-            return bytes;
+        if(length == dataSize + 6){
+            pushByte(nextByte);
+            byte[] result = new byte[length];
+            System.arraycopy(bytes, 0, result, 0 , length); 
+            length = 0;
+            return result;
         }
 
         return null;
@@ -108,7 +116,10 @@ public class TftpClientEncDec implements MessageEncoderDecoder<byte[]> {
     private byte[] decodeACK(byte nextByte){
         pushByte(nextByte);
         if(length == 4){
-            return bytes;
+            byte[] result = new byte[length];
+            System.arraycopy(bytes, 0, result, 0 , length); 
+            length = 0;
+            return result;
         }
         return null;
     }
@@ -120,7 +131,10 @@ public class TftpClientEncDec implements MessageEncoderDecoder<byte[]> {
         }
         if(nextByte == 0){
             pushByte(nextByte);
-            return bytes;
+            byte[] result = new byte[length];
+            System.arraycopy(bytes, 0, result, 0 , length); 
+            length = 0;
+            return result;
         }
         else{
             pushByte(nextByte);
@@ -129,7 +143,10 @@ public class TftpClientEncDec implements MessageEncoderDecoder<byte[]> {
     }
 
     private byte[] decodeDIRQ(byte nextByte){
-        return bytes;
+        byte[] result = new byte[length];
+        System.arraycopy(bytes, 0, result, 0 , length); 
+        length = 0;
+        return result;
     }
 
     private byte[] decodeBCAST(byte nextByte){
@@ -139,7 +156,10 @@ public class TftpClientEncDec implements MessageEncoderDecoder<byte[]> {
         }
         if(nextByte == 0){
             pushByte(nextByte);
-            return bytes; // check if 0 needs to be sent as part of the message as a sign of end of message
+            byte[] result = new byte[length];
+            System.arraycopy(bytes, 0, result, 0 , length); 
+            length = 0;
+            return result;
         }
         pushByte(nextByte);
         return null;
@@ -147,28 +167,28 @@ public class TftpClientEncDec implements MessageEncoderDecoder<byte[]> {
     }
 
     private byte[] decodeDISC(byte nextByte){
-        return bytes;
+        byte[] result = new byte[length];
+        System.arraycopy(bytes, 0, result, 0 , length); 
+        length = 0;
+        return result;
     }
-
-
-
 
     // encoders
 
-    private byte[] encodeLOG(byte[] message){
+    private byte[] encodeLOGRQ(byte[] message){
         byte[] packet = new byte[message.length - 3]; // +2 for opcode, +1 for 0, -6 for 'LOGRQ '
         packet[0] = (byte) (op_LOGRQ >> 8);
         packet[1] = (byte) (op_LOGRQ & 0xff);
-        packet[packet.length-1] = (byte)0;
+        packet[packet.length-1] = 0;
         System.arraycopy(message, 6, packet, 2, packet.length-3);
         return packet;
     }
 
-    private byte[] encodeDEL(byte[] message){
+    private byte[] encodeDELRQ(byte[] message){
         byte[] packet = new byte[message.length - 3]; // +2 for opcode, +1 for 0, -6 for 'DELRQ '
         packet[0] = (byte) (op_DELRQ >> 8);
         packet[1] = (byte) (op_DELRQ & 0xff);
-        packet[packet.length-1] = (byte)0;
+        packet[packet.length-1] = 0;
         System.arraycopy(message, 6, packet, 2, packet.length-3);
         return packet;
     }
@@ -177,7 +197,7 @@ public class TftpClientEncDec implements MessageEncoderDecoder<byte[]> {
         byte[] packet = new byte[message.length - 1]; // +2 for opcode, +1 for 0, -4 for 'RRQ '
         packet[0] = (byte) (op_RRQ >> 8);
         packet[1] = (byte) (op_RRQ & 0xff);
-        packet[packet.length-1] = (byte)0;
+        packet[packet.length-1] = 0;
         System.arraycopy(message, 4, packet, 2, packet.length-3);
         return packet;
     }
@@ -192,14 +212,14 @@ public class TftpClientEncDec implements MessageEncoderDecoder<byte[]> {
         return packet;
     }
 
-    private byte[] encodeDIR(){
+    private byte[] encodeDIRC(){
         byte[] packet = new byte[2]; // +2 for opcode, +1 for 0, -4 for 'WRQ '
         packet[0] = (byte) (op_DIRQ >> 8);
         packet[1] = (byte) (op_DIRQ & 0xff);
         return packet;
     }
 
-    private byte[] encodeDIS() {
+    private byte[] encodeDISC() {
         byte[] packet = new byte[2]; // +2 for opcode, +1 for 0, -4 for 'WRQ '
         packet[0] = (byte) (op_DISC >> 8);
         packet[1] = (byte) (op_DISC & 0xff);
