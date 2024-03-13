@@ -10,7 +10,6 @@ C:\Users\tomer\Downloads\SPL-Assignment3\Skeleton\server\src\main\java\bgu\spl\n
 C:\Users\tomer\Downloads\SPL-Assignment3\Skeleton\server\src\main\java\bgu\spl\net\srv\BaseServer.java
 C:\Users\tomer\Downloads\SPL-Assignment3\Skeleton\server\src\main\java\bgu\spl\net\impl\rci\Command.java
 C:\Users\tomer\Downloads\SPL-Assignment3\Skeleton\server\src\main\java\bgu\spl\net\impl\rci\RemoteCommandInvocationProtocol.java
-C:\Users\tomer\Downloads\SPL-Assignment3\Skeleton\server\src\main\java\bgu\spl\net\impl\tftp\FileOperations.java
 C:\Users\tomer\Downloads\SPL-Assignment3\Skeleton\server\src\main\java\bgu\spl\net\impl\echo\EchoServer.java
 C:\Users\tomer\Downloads\SPL-Assignment3\Skeleton\server\src\main\java\bgu\spl\net\srv\ConnectionHandler.java
 C:\Users\tomer\Downloads\SPL-Assignment3\Skeleton\server\src\main\java\bgu\spl\net\impl\newsfeed\NewsFeedServerMain.java
