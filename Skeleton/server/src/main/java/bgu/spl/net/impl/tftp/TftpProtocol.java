@@ -33,7 +33,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     @Override
     public void start(int _connectionId, ConnectionsImpl<byte[]> _connections) {
         // TODO implement this
-        
+
         connectionId = _connectionId;
         connections = _connections;
         shouldTerminate = false;
@@ -96,7 +96,6 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
             // see what we need to do in case of ack not for data packet
         }
         else if(opCode == op_DATA){
-            System.out.println("enter DATA block"); //Flag
             short packSize = (short)(((short)message[2] & 0xFF)<<8|(short)(message[3] & 0xFF));
             short blockNum = (short)(((short)message[4] & 0xFF)<<8|(short)(message[5] & 0xFF));
             byte[] data = Arrays.copyOfRange(message, 6, message.length - 1);
@@ -105,17 +104,12 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                 expectedBlocks = blockNum;
             }
 
-            System.out.println("uploadFile length before resizing: " + uploadFile.length);
-            System.out.println("packsize: " + packSize);
-
             if (packSize + blocksSent*512 > uploadFile.length) { // in case uploadFile array is not big enough
                 System.out.println("resizing array");
                 byte[] temp = new byte[uploadFile.length*2];
                 System.arraycopy(uploadFile, 0, temp, 0, uploadFile.length);
                 uploadFile = temp;
             }
-            System.out.println("uploadFile length after resizing: " + uploadFile.length);
-            System.out.println("space left in array: " + (uploadFile.length - blocksSent*512));
 
             // add data to uploadFile
             System.arraycopy(data, 0, uploadFile, blocksSent*512, packSize);

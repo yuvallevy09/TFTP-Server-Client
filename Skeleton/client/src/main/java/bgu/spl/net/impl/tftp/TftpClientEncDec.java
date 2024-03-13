@@ -12,7 +12,7 @@ public class TftpClientEncDec implements MessageEncoderDecoder<byte[]> {
     private short opCode = 0;
     private int dataSize;
     public String downloadFileName;
-    public String uploadFileName;
+    public String sendingFileName;
     public String request = "";
 
     //OpCode fields
@@ -46,7 +46,6 @@ public class TftpClientEncDec implements MessageEncoderDecoder<byte[]> {
     @Override
     public byte[] encode(byte[] message) {
         //TODO: implement this
-
 
         boolean isLegal = false;
 
@@ -221,7 +220,7 @@ public class TftpClientEncDec implements MessageEncoderDecoder<byte[]> {
         packet[1] = (byte) (op_WRQ & 0xff);
         packet[packet.length-1] = (byte)0;
         System.arraycopy(message, 4, packet, 2, packet.length-3);
-        uploadFileName = new String(message, 4, message.length - 4, StandardCharsets.UTF_8);
+        sendingFileName = new String(message, 4, message.length - 4, StandardCharsets.UTF_8);
         return packet;
     }
 
