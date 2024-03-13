@@ -40,12 +40,6 @@ public class TftpClientMain {
 
             keyboardThread.start();
             listenerThread.start();
-
-            System.out.println("sending message to server");
-            c.send(args[1].getBytes());
-
-            System.out.println("awaiting response");
-            c.receive();
         } 
         catch(IOException ex){};
     }

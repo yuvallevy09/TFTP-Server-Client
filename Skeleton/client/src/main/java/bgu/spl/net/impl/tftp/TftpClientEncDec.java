@@ -47,6 +47,7 @@ public class TftpClientEncDec implements MessageEncoderDecoder<byte[]> {
     public byte[] encode(byte[] message) {
         //TODO: implement this
 
+
         boolean isLegal = false;
 
         for (int i = 0; i < 6 & !isLegal; i++) {
