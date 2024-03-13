@@ -31,61 +31,76 @@ public class TftpClient<T> implements Closeable{
         out = new BufferedOutputStream(sock.getOutputStream());
         shouldTerminate = false;
         cwd = new File("Skeleton/client");
+
     }
+
+
+    // first need to encode msg, use request to decipher what actions are needed:
+    // if rrq, check if file exists in cwd, if not create file in cwd and send request
+        // if file exists then print ”file already exists” and don't send rrq
+        // in receive (listening thread): if received error, print delete created file 
+    // if wrq, check if file exists then send a WRQ packet
+        // if does not exist, print to terminal ”file does not exists” and don’t send WRQ
+    // else: simply send encoded message
+
+    // need to restart request field after handling message
+
 
     public void send(byte[] msg) throws IOException {
-
-        // first need to encode msg, use request to decipher what actions are needed:
-            // if rrq, check if file exists in cwd, if not create file in cwd and send request
-                // if file exists then print ”file already exists” and don't send rrq
-                // in receive (listening thread): if received error, print delete created file 
-            // if wrq, check if file exist then send a WRQ packet
-                // if does not exist, print to terminal ”file does not exists” and don’t send WRQ
-            // else: simply send encoded message
-            
-
-
-
+        byte[] encoded = encdec.encode(msg);
+        String error = "Invalid Command";
+        if (encoded.equals(error.getBytes())){
+            System.out.println(error);
+            return;
+        } else if(encdec.request == "RRQ "){
+            String pathName = "Skeleton/client/" + encdec.downloadFileName;
+            File f = new File(pathName);
+            f.getParentFile().mkdirs(); 
+            try {
+                if (f.createNewFile()) { // returns true if file does not exist 
+                    out.write(encoded);
+                    out.flush(); // send packet
+                } else {
+                    System.out.println("file already exists");
+                    encdec.request = ""; // finished handling command 
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return;
+        } else if (encdec.request == "WRQ ") {
+            String pathName = "Skeleton/client/" + encdec.uploadFileName;
+            if (new File(pathName).exists()){
+                out.write(encoded);
+                out.flush(); // send packet
+            } else {
+                System.out.println("file does not exist");
+                encdec.request = ""; // finished handling command 
+            }
+            return;
+        } else {
+            out.write(encoded);
+            out.flush(); // send packet
+        }
+    }
 
         // receive:
-            // if data packet (rrq or dirq)
-                // insert into uploadingFile and send ack with block number 
-            // if ack: 
-                // if bn == 1, prepare data packets of the sendingFile, sendNextPack
-                // if bn > 1, sendNextPack
-                    // if bn == expected, print complete 
-                // else tbd
+        // if data packet (rrq or dirq)
+            // insert into uploadingFile and send ack with block number 
+        // if ack: 
+            // if bn == 1, prepare data packets of the sendingFile, sendNextPack
+            // if bn > 1, sendNextPack
+                // if bn == expected, print complete 
+            // else tbd
             
+        // // add content to new file 
+        // try (FileOutputStream fos = new FileOutputStream(pathName)) {
+        //     fos.write(uploadFile);
+        //     fos.flush();
+        // } catch (IOException e) {
+        //     e.printStackTrace();
+        // }
 
-
-
-
-
-
-
-        // need to restart request field after handling message
-
-
-
-        String pathName = "Skeleton/server/Files/" + uploadingFileName;
-                File f = new File(pathName);
-                f.getParentFile().mkdirs(); 
-                try {
-                    f.createNewFile();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                // add content to new file 
-                try (FileOutputStream fos = new FileOutputStream(pathName)) {
-                    fos.write(uploadFile);
-                    fos.flush();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-        out.write(encdec.encode(msg));
-        out.flush();
-    }
 
     public void receive() throws IOException {
         int read;

@@ -11,7 +11,8 @@ public class TftpClientEncDec implements MessageEncoderDecoder<byte[]> {
     private int length = 0;
     private short opCode = 0;
     private int dataSize;
-    private String uploadFileName = null;
+    public String downloadFileName;
+    public String uploadFileName;
     public String request = "";
 
     //OpCode fields
@@ -46,18 +47,29 @@ public class TftpClientEncDec implements MessageEncoderDecoder<byte[]> {
     public byte[] encode(byte[] message) {
         //TODO: implement this
 
-        // String request = "";
-        for (int i = 0; i < 3; i++) {
+
+        boolean isLegal = false;
+
+        for (int i = 0; i < 6 & !isLegal; i++) {
             request = request + message[i];
+            if (request.equals("RRQ ") | request.equals("WRQ ") | request.equals("DISC ") | 
+                request.equals("DIRQ ") | request.equals("LOGRQ ") | request.equals("DELRQ ")) {
+                isLegal = true;
+            }
+        }
+
+        if (!isLegal) {
+            String error = "Invalid Command";
+            return error.getBytes();
         }
 
         switch(request) {
-            case "LOG": return encodeLOGRQ(message);
-            case "DEL": return encodeDELRQ(message);
-            case "RRQ": return encodeRRQ(message);
-            case "WRQ": return encodeWRQ(message);
-            case "DIR": return encodeDIRC();
-            case "DIS": return encodeDISC();
+            case "LOGRQ ": return encodeLOGRQ(message);
+            case "DELRQ ": return encodeDELRQ(message);
+            case "RRQ ": return encodeRRQ(message);
+            case "WRQ ": return encodeWRQ(message);
+            case "DIRQ ": return encodeDIRC();
+            case "DISC ": return encodeDISC();
             default: return message; // check if this is correct 
         }
     }
@@ -199,6 +211,7 @@ public class TftpClientEncDec implements MessageEncoderDecoder<byte[]> {
         packet[1] = (byte) (op_RRQ & 0xff);
         packet[packet.length-1] = 0;
         System.arraycopy(message, 4, packet, 2, packet.length-3);
+        downloadFileName = new String(message, 4, packet.length - 3, StandardCharsets.UTF_8); 
         return packet;
     }
 
