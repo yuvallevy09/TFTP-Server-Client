@@ -151,7 +151,8 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                 byte[] msgBCAST = new byte[4 + filenameBytes.length];
                 msgBCAST[0] = (byte) (op_BCAST >> 8);
                 msgBCAST[1] = (byte) (op_BCAST & 0xff);
-                msgBCAST[2] = (byte) ((short) 1 >> 8);
+                msgBCAST[2] = 1;
+                msgBCAST[msgBCAST.length -1] = (byte) 0;
                 System.arraycopy(filenameBytes, 0, msgBCAST, 3, filenameBytes.length);
                 for(Integer id : holder.ids_login.keySet()){
                     connections.send(id, msgBCAST); // sends the BCAST to all login clients
@@ -181,7 +182,8 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                 byte[] msgBCAST = new byte[4 + filename.length()];
                 msgBCAST[0] = (byte) (op_BCAST >> 8);
                 msgBCAST[1] = (byte) (op_BCAST & 0xff);
-                msgBCAST[2] = (byte) ((short) 0 >> 8);
+                msgBCAST[2] = 0;
+                msgBCAST[msgBCAST.length -1] = (byte) 0;
                 System.arraycopy(filenameBytes, 0, msgBCAST, 3, filenameBytes.length);
                 for(Integer id : holder.ids_login.keySet()){
                     connections.send(id, msgBCAST); // sends the BCAST to all login clients
