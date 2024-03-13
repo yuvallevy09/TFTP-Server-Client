@@ -3,6 +3,8 @@ package bgu.spl.net.impl.tftp;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.Closeable;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -15,6 +17,8 @@ public class TftpClient<T> implements Closeable{
     private final Socket sock;
     private final BufferedInputStream in;
     private final BufferedOutputStream out;
+    private boolean shouldTerminate;
+    private File cwd;
 
     //OpCode fields
     final short op_RRQ = 1; final short op_WRQ = 2; final short op_DATA = 3; final short op_ACK = 4; final short op_ERROR = 5;
@@ -25,9 +29,60 @@ public class TftpClient<T> implements Closeable{
         encdec = new TftpClientEncDec();
         in = new BufferedInputStream(sock.getInputStream());
         out = new BufferedOutputStream(sock.getOutputStream());
+        shouldTerminate = false;
+        cwd = new File("Skeleton/client");
     }
 
     public void send(byte[] msg) throws IOException {
+
+        // first need to encode msg, use request to decipher what actions are needed:
+            // if rrq, check if file exists in cwd, if not create file in cwd and send request
+                // if file exists then print ”file already exists” and don't send rrq
+                // in receive (listening thread): if received error, print delete created file 
+            // if wrq, check if file exist then send a WRQ packet
+                // if does not exist, print to terminal ”file does not exists” and don’t send WRQ
+            // else: simply send encoded message
+            
+
+
+
+
+        // receive:
+            // if data packet (rrq or dirq)
+                // insert into uploadingFile and send ack with block number 
+            // if ack: 
+                // if bn == 1, prepare data packets of the sendingFile, sendNextPack
+                // if bn > 1, sendNextPack
+                    // if bn == expected, print complete 
+                // else tbd
+            
+
+
+
+
+
+
+
+        // need to restart request field after handling message
+
+
+
+        String pathName = "Skeleton/server/Files/" + uploadingFileName;
+                File f = new File(pathName);
+                f.getParentFile().mkdirs(); 
+                try {
+                    f.createNewFile();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                // add content to new file 
+                try (FileOutputStream fos = new FileOutputStream(pathName)) {
+                    fos.write(uploadFile);
+                    fos.flush();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
         out.write(encdec.encode(msg));
         out.flush();
     }
@@ -101,6 +156,10 @@ public class TftpClient<T> implements Closeable{
         msgACK[2] = (byte) (blockNum >> 8);
         msgACK[3] = (byte) (blockNum & 0xff);
         return msgACK;
+    }
+
+    public boolean shouldTerminate() {
+        return shouldTerminate;
     }
     
 }

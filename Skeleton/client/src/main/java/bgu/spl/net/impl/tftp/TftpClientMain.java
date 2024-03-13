@@ -1,4 +1,6 @@
 package bgu.spl.net.impl.tftp;
+import java.io.BufferedReader;
+import java.io.InputStreamReader; 
 
 import java.io.IOException;
 
@@ -13,16 +15,38 @@ public class TftpClientMain {
             // in send check error before write
             // when sent, thread is in wait
 
-            // start listening thread that receives
-            // handle response, notifies when finished 'processing'
+            Thread keyboardThread = new Thread(() -> {
+                BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+                while (!c.shouldTerminate()) {
+                    try{
+                        byte[] userInput = br.readLine().getBytes(); 
+                        c.send(userInput);
+                    }
+                    catch(Exception e){
+                        e.printStackTrace();
+                    }
+                }
+            });
 
+            Thread listenerThread = new Thread(() -> {
+                while (!c.shouldTerminate()) {
+                    try {
+                        c.receive();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+
+            keyboardThread.start();
+            listenerThread.start();
 
             System.out.println("sending message to server");
             c.send(args[1].getBytes());
 
             System.out.println("awaiting response");
             c.receive();
-        } // added closing brace to match the opening brace of try block
+        } 
         catch(IOException ex){};
     }
 }
