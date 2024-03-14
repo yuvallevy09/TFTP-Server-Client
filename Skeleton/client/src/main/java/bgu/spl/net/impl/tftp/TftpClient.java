@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 
 
@@ -20,13 +22,13 @@ public class TftpClient<T> implements Closeable{
     private final BufferedInputStream in;
     private final BufferedOutputStream out;
     private boolean shouldTerminate;
-    private File cwd;
     private int pos;
     private byte[] sendingFile;
     private short block;
     private short expectedBlocks;
     private int blocksSent;
     private byte[] downloadFile;
+    private String filesPath;
 
     //OpCode fields
     final short op_RRQ = 1; final short op_WRQ = 2; final short op_DATA = 3; final short op_ACK = 4; final short op_ERROR = 5;
@@ -38,24 +40,15 @@ public class TftpClient<T> implements Closeable{
         in = new BufferedInputStream(sock.getInputStream());
         out = new BufferedOutputStream(sock.getOutputStream());
         shouldTerminate = false;
-        cwd = new File("Skeleton/client");
         pos = 0;
         block = 1;
         expectedBlocks = 0;
         blocksSent = 0;
         downloadFile = new byte[1<<10];
+        Path p = Paths.get("");
+        File dir = p.toFile();
+        filesPath = dir.getAbsolutePath();
     }
-
-
-    // first need to encode msg, use request to decipher what actions are needed:
-    // if rrq, check if file exists in cwd, if not create file in cwd and send request
-        // if file exists then print ”file already exists” and don't send rrq
-        // in receive (listening thread): if received error, print delete created file 
-    // if wrq, check if file exists then send a WRQ packet
-        // if does not exist, print to terminal ”file does not exists” and don’t send WRQ
-    // else: simply send encoded message
-
-    // need to restart request field after handling message
 
 
     public void send(byte[] msg) throws IOException {
@@ -66,13 +59,20 @@ public class TftpClient<T> implements Closeable{
             System.out.println(error);
             return;
         } else if(encdec.request.equals("RRQ ")){
-            String pathName = "Skeleton/client/" + encdec.downloadFileName;
+            String pathName = filesPath + File.separator + encdec.downloadFileName;
             File f = new File(pathName);
             f.getParentFile().mkdirs(); 
             try {
                 if (f.createNewFile()) { // returns true if file does not exist 
                     out.write(encoded);
-                    out.flush(); // send packet
+                    synchronized (this) {
+                        out.flush(); // send packet
+                        try {
+                            wait();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
                 } else {
                     System.out.println("file already exists");
                     encdec.request = ""; // finished handling command 
@@ -82,10 +82,17 @@ public class TftpClient<T> implements Closeable{
             }
             return;
         } else if (encdec.request.equals("WRQ ") ) {
-            String pathName = "Skeleton/client/" + encdec.sendingFileName;
+            String pathName = filesPath + File.separator +  encdec.sendingFileName;
             if (new File(pathName).exists()){
                 out.write(encoded);
-                out.flush(); // send packet
+                synchronized (this) {
+                    out.flush(); // send packet
+                    try {
+                        wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
             } else {
                 System.out.println("file does not exist");
                 encdec.request = ""; // finished handling command 
@@ -93,13 +100,13 @@ public class TftpClient<T> implements Closeable{
             return;
         } else {
             out.write(encoded);
-            out.flush(); // send packet
-        }
-        synchronized (this) {
-            try {
-                wait();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            synchronized (this) {
+                out.flush(); // send packet
+                try {
+                    wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
@@ -115,7 +122,7 @@ public class TftpClient<T> implements Closeable{
                         short blockNum = (short)(((short)msg[2] & 0xFF)<<8|(short)(msg[3] & 0xFF));
                         if (encdec.request.equals("WRQ ")) {
                             if (blockNum == (short)0) { // prepare array of content and send first data pack
-                                String pathName = "Skeleton/client/" + encdec.sendingFileName;
+                                String pathName = filesPath + File.separator +  encdec.sendingFileName;
                                 File f = new File(pathName);
                                 try {
                                     sendingFile = Files.readAllBytes(f.toPath());
@@ -201,7 +208,7 @@ public class TftpClient<T> implements Closeable{
                         // if all the blocks were sent 
                         if (expectedBlocks == blocksSent) {
                             if (encdec.request.equals("RRQ ")) {
-                                String pathName = "Skeleton/server/Files/" + encdec.downloadFileName;
+                                String pathName = filesPath + File.separator + encdec.downloadFileName;
                                 // add content to new file 
                                 try (FileOutputStream fos = new FileOutputStream(pathName)) {
                                     fos.write(downloadFile);
@@ -209,9 +216,10 @@ public class TftpClient<T> implements Closeable{
                                 } catch (IOException e) {
                                     e.printStackTrace();
                                 }
-                                System.out.println("RRQ " + " " + encdec.downloadFileName + " complete");
+                                System.out.println("RRQ " + encdec.downloadFileName + " complete");
                             } else if (encdec.request.equals("DIRQ")) {
-                                System.out.println(downloadFile.toString());
+                                String s = new String(downloadFile);
+                                System.out.println(s);
                             } 
                             downloadFile = new byte[1<<10];
                             blocksSent = 0;
@@ -229,7 +237,6 @@ public class TftpClient<T> implements Closeable{
                 }
             }
         }
-        throw new IOException("disconnected before complete reading message");
     }
 
     @Override

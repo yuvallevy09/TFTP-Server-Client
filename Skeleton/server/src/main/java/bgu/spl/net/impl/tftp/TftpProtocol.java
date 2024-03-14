@@ -6,6 +6,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import bgu.spl.net.api.BidiMessagingProtocol;
 import bgu.spl.net.srv.ConnectionsImpl;
@@ -25,6 +27,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     private byte[] sendingFile;
     private int pos;
     private short block;
+    private String filesPath;
 
     //OpCode fields
     short op_RRQ = 1; short op_WRQ = 2; short op_DATA = 3; short op_ACK = 4; short op_ERROR = 5;
@@ -43,6 +46,9 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
         loggedIn = false;
         pos = 0;
         block = 1;
+        Path p = Paths.get("Files");
+        File dir = p.toFile();
+        filesPath = dir.getAbsolutePath();
     }
 
     @Override
@@ -54,6 +60,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
             System.out.println("enter LOGRQ block"); //Flag
             String username = new String(message, 2, message.length - 3, StandardCharsets.UTF_8);
             System.out.println( "username received as: " + username); //Flag
+            loggedIn = holder.ids_login.containsValue(username) || holder.ids_login.get(connectionId) != null;
             if(!loggedIn) { // if username does not exist 
                 holder.ids_login.put(connectionId, username); 
                 System.out.println(username + " was inserted to the ids login"); //Flag  
@@ -122,7 +129,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
             // if all the blocks were sent 
             if (expectedBlocks == blocksSent){
                 // create new file in Files folder
-                String pathName = "Skeleton/server/Files/" + uploadingFileName;
+                String pathName = filesPath + File.separator + uploadingFileName;
                 File f = new File(pathName);
                 f.getParentFile().mkdirs(); 
                 try {
@@ -195,9 +202,10 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                 // iterate on hashmap
                 String filesList = new String();
                 for(String filename : holder.filesMap.keySet()){
-                    filesList+= filename.concat("\0");
-                } 
-                sendingFile = filesList.getBytes();
+                    filesList+= filename.concat("\n");
+                }
+
+                sendingFile = filesList.substring(0, filesList.length()-1).getBytes();
                 sendNextPack();
             } else {
                 String error = "Nothing." + '\0';
@@ -241,6 +249,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
         }
         else if(opCode == op_DISC) {  
             System.out.println("enter DISC block"); //Flag
+            loggedIn = holder.ids_login.get(connectionId) != null;
             if(loggedIn){ // check if this condition is right 
                 byte[] msgACK = packAck((short) 0);
                 String ack = new String(msgACK, StandardCharsets.UTF_8); //Flag

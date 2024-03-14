@@ -9,6 +9,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -33,7 +35,6 @@ public abstract class BaseServer<T> implements Server<T> {
 		this.sock = null;
         connections = new ConnectionsImpl<T>();
         idCounter = 0;
-       
     }
 
     @Override
@@ -43,11 +44,17 @@ public abstract class BaseServer<T> implements Server<T> {
 			System.out.println("Server started");
             
             //put all existing files in server on filesMap
-            File dir = new File("Skeleton/server/Files");
+            //Path directory = Paths.get(""+"/"+"Files");
+            
+            Path p = Paths.get("Files");
+            File dir = p.toFile();
+            
             File[] directoryListing = dir.listFiles();
             if (directoryListing != null) {
                 for (File f : directoryListing) {
                     holder.filesMap.put(f.getName(), f);
+                    System.out.println(f.getName());
+                    System.out.println(f.getAbsolutePath());
                 }
             }
 
