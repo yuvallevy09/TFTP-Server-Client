@@ -134,7 +134,7 @@ public class TftpClient<T> implements Closeable{
                                     notify();
                                 }
                             }
-                        } else if (encdec.request.equals("DISC ")) {
+                        } else if (encdec.request.equals("DISC")) {
                             encdec.request = "";
                             shouldTerminate = true;
                             synchronized (this) {
@@ -210,7 +210,7 @@ public class TftpClient<T> implements Closeable{
                                     e.printStackTrace();
                                 }
                                 System.out.println("RRQ " + " " + encdec.downloadFileName + " complete");
-                            } else if (encdec.request.equals("DIRQ ")) {
+                            } else if (encdec.request.equals("DIRQ")) {
                                 System.out.println(downloadFile.toString());
                             } 
                             downloadFile = new byte[1<<10];
