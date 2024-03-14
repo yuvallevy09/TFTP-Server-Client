@@ -63,7 +63,6 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                 holder.ids_login.put(connectionId, username); 
                 loggedIn = true;
                 byte[] msgACK = packAck((short)0);
-                String ack = new String(msgACK, StandardCharsets.UTF_8);
                 connections.send(connectionId, msgACK);
             } else {
                 String error = "User already logged in" + '\0';

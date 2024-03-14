@@ -2,7 +2,6 @@ package bgu.spl.net.srv;
 
 import bgu.spl.net.api.BidiMessagingProtocol;
 import bgu.spl.net.api.MessageEncoderDecoder;
-import bgu.spl.net.impl.tftp.TftpProtocol;
 import bgu.spl.net.impl.tftp.holder;
 
 import java.io.File;
