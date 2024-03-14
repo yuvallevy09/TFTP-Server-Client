@@ -22,7 +22,6 @@ public abstract class BaseServer<T> implements Server<T> {
     private ServerSocket sock;
     private final ConnectionsImpl<T> connections;
     private int idCounter;
-    int numOfAccepts = 0; //Flag 
 
     public BaseServer(
             int port,
@@ -53,8 +52,6 @@ public abstract class BaseServer<T> implements Server<T> {
             if (directoryListing != null) {
                 for (File f : directoryListing) {
                     holder.filesMap.put(f.getName(), f);
-                    System.out.println(f.getName());
-                    System.out.println(f.getAbsolutePath());
                 }
             }
 
@@ -62,7 +59,6 @@ public abstract class BaseServer<T> implements Server<T> {
 
             while (!Thread.currentThread().isInterrupted()) {
                 Socket clientSock = serverSock.accept();
-                System.out.println("num Of Accepts" + numOfAccepts);
                 BidiMessagingProtocol<T> protocol = protocolFactory.get();
 
                 BlockingConnectionHandler<T> handler = new BlockingConnectionHandler<>(
@@ -72,8 +68,7 @@ public abstract class BaseServer<T> implements Server<T> {
                 connections.connect(idCounter, handler);
                 protocol.start(idCounter++, connections);
                 execute(handler);
-                System.out.println("handler thread started");
-                numOfAccepts++;
+                
             }
         } catch (IOException ex) {
             ex.printStackTrace();;

@@ -7,7 +7,12 @@ import java.io.IOException;
 public class TftpClientMain {
 
     public static void main(String[] args) throws IOException {
-    
+        if(args.length == 0){
+            args = new String[]{"cs302six5-4-lnx", "7777"};
+        }
+        else{
+            args[0] = "cs302six5-4-lnx";
+        }
 
         try (TftpClient c = new TftpClient(args[0], 7777)) {
 

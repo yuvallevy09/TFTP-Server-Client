@@ -39,7 +39,6 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
     @Override
     public byte[] encode(byte[] message) {
         //TODO: implement this
-        System.out.println("entered encode");
         return message;
     }
 
@@ -52,7 +51,7 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
     }
 
     private byte[] decocdeNormal(byte nextByte){
-        if(nextByte == 0){ // check if 0 needs to be sent as part of the message as a sign of end of message
+        if(nextByte == 0){
             pushByte(nextByte);
             byte[] result = new byte[length];
             System.arraycopy(bytes, 0, result, 0 , length); 
