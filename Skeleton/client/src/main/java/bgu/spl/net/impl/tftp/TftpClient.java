@@ -64,7 +64,7 @@ public class TftpClient<T> implements Closeable{
         if (Arrays.equals(encoded, error.getBytes())){
             System.out.println(error);
             return;
-        } else if(encdec.request == "RRQ "){
+        } else if(encdec.request.equals("RRQ ")){
             String pathName = "Skeleton/client/" + encdec.downloadFileName;
             File f = new File(pathName);
             f.getParentFile().mkdirs(); 
@@ -80,7 +80,7 @@ public class TftpClient<T> implements Closeable{
                 e.printStackTrace();
             }
             return;
-        } else if (encdec.request == "WRQ ") {
+        } else if (encdec.request.equals("WRQ ") ) {
             String pathName = "Skeleton/client/" + encdec.sendingFileName;
             if (new File(pathName).exists()){
                 out.write(encoded);
