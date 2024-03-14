@@ -62,6 +62,7 @@ public class TftpClient<T> implements Closeable{
         byte[] encoded = encdec.encode(msg);
         String error = "Invalid Command";
         if (Arrays.equals(encoded, error.getBytes())){
+            encdec.request = "";
             System.out.println(error);
             return;
         } else if(encdec.request.equals("RRQ ")){
@@ -111,8 +112,8 @@ public class TftpClient<T> implements Closeable{
                 short opCode = (short)(((short)msg[0] & 0xFF)<<8|(short)(msg[1] & 0xFF));
                 switch (opCode) {
                     case op_ACK:
+                        short blockNum = (short)(((short)msg[2] & 0xFF)<<8|(short)(msg[3] & 0xFF));
                         if (encdec.request.equals("WRQ ")) {
-                            short blockNum = (short)(((short)msg[2] & 0xFF)<<8|(short)(msg[3] & 0xFF));
                             if (blockNum == (short)0) { // prepare array of content and send first data pack
                                 String pathName = "Skeleton/client/" + encdec.sendingFileName;
                                 File f = new File(pathName);
@@ -134,15 +135,18 @@ public class TftpClient<T> implements Closeable{
                                 }
                             }
                         } else if (encdec.request.equals("DISC ")) {
+                            encdec.request = "";
                             shouldTerminate = true;
                             synchronized (this) {
                                 notify();
                             }
                         } else {
+                            encdec.request = "";
                             synchronized (this) {
                                 notify();
                             }
                         }
+                        System.out.println("ACK " + blockNum);
                         break;
 
                     case op_ERROR:
@@ -153,6 +157,7 @@ public class TftpClient<T> implements Closeable{
                             errMsg = new String(msg, 4, length, StandardCharsets.UTF_8);
                         }
                         System.out.println("Error " + errNum + " " + errMsg);
+                        encdec.request = "";
                         synchronized (this) {
                             notify();
                         }
@@ -170,11 +175,11 @@ public class TftpClient<T> implements Closeable{
 
                     case op_DATA:
                         short packSize = (short)(((short)msg[2] & 0xFF)<<8|(short)(msg[3] & 0xFF));
-                        short blockNum = (short)(((short)msg[4] & 0xFF)<<8|(short)(msg[5] & 0xFF));
+                        short bNum = (short)(((short)msg[4] & 0xFF)<<8|(short)(msg[5] & 0xFF));
                         byte[] data = Arrays.copyOfRange(msg, 6, msg.length - 1);
             
                         if (packSize < 512){
-                            expectedBlocks = blockNum;
+                            expectedBlocks = bNum;
                         }
             
                         if (packSize + blocksSent*512 > downloadFile.length) { // in case uploadFile array is not big enough

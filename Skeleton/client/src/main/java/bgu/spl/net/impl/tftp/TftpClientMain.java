@@ -41,6 +41,11 @@ public class TftpClientMain {
 
             keyboardThread.start();
             listenerThread.start();
+            try {
+                keyboardThread.join();
+                listenerThread.join();
+            } catch (InterruptedException e) {}
+            
         } 
         catch(IOException ex){};
     }

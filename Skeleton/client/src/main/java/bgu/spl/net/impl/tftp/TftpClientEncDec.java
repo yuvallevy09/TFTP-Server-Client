@@ -46,14 +46,15 @@ public class TftpClientEncDec implements MessageEncoderDecoder<byte[]> {
     @Override
     public byte[] encode(byte[] message) {
         //TODO: implement this
+        String s = new String(message);
 
 
         boolean isLegal = false;
 
-        for (int i = 0; i < 6 & !isLegal; i++) {
-            request = request + message[i];
-            if (request.equals("RRQ ") | request.equals("WRQ ") | request.equals("DISC ") | 
-                request.equals("DIRQ ") | request.equals("LOGRQ ") | request.equals("DELRQ ")) {
+        for (int i = 0; (i < s.length() && i < 6) & !isLegal; i++) {
+            request = request +  s.charAt(i);
+            if (request.equals("RRQ ") | request.equals("WRQ ") | request.equals("DISC") | 
+                request.equals("DIRQ") | request.equals("LOGRQ ") | request.equals("DELRQ ")) {
                 isLegal = true;
             }
         }
@@ -68,8 +69,8 @@ public class TftpClientEncDec implements MessageEncoderDecoder<byte[]> {
             case "DELRQ ": return encodeDELRQ(message);
             case "RRQ ": return encodeRRQ(message);
             case "WRQ ": return encodeWRQ(message);
-            case "DIRQ ": return encodeDIRC();
-            case "DISC ": return encodeDISC();
+            case "DIRQ": return encodeDIRC();
+            case "DISC": return encodeDISC();
             default: return message; // check if this is correct 
         }
     }
