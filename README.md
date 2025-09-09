@@ -1,6 +1,6 @@
 ## TFTP Server & Client (Java, TCP)
 
-An end‑to‑end implementation of an extended TFTP (Trivial File Transfer Protocol) over TCP. It includes a multi‑client server (Thread‑Per‑Client pattern) and an interactive client with a keyboard thread and a listening thread. The system supports login, upload, download, directory listing, delete, disconnect, and server‑initiated broadcasts when files are added or removed.
+An end‑to‑end implementation of an extended TFTP (Trivial File Transfer Protocol) server and client over TCP. It includes a multi‑client server (Thread‑Per‑Client pattern) and an interactive client with a keyboard thread and a listening thread. The system supports login, upload, download, directory listing, delete, disconnect, and server‑initiated broadcasts when files are added or removed.
 
 ### Technical Significance
 - Demonstrates design and implementation of a custom binary protocol over TCP with Big‑endian encoding.
