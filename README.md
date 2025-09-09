@@ -1,6 +1,5 @@
-## Extended TFTP Server & Client (Java, TCP)
+## TFTP Server & Client (Java, TCP)
 
-### What this project is
 An end‑to‑end implementation of an extended TFTP (Trivial File Transfer Protocol) over TCP. It includes a multi‑client server (Thread‑Per‑Client pattern) and an interactive client with a keyboard thread and a listening thread. The system supports login, upload, download, directory listing, delete, disconnect, and server‑initiated broadcasts when files are added or removed.
 
 ### Why it matters
@@ -121,22 +120,9 @@ RRQ B.txt complete
 
 ---
 
-## Known limitations and next steps
-The project is complete enough for functional demos, and these items are good candidates for polishing:
-- **CLI args**: server/client mains currently favor defaults (e.g., port `7777`, predefined host); parameterize fully from command line.
-- **Protocol interface types**: `BidiMessagingProtocol#start` receives a concrete `ConnectionsImpl` rather than the `Connections` interface; generalize to the interface.
-- **Error codes/messages**: align `ERROR` packet error‑code field to spec values (0–7) and use precise messages (e.g., `File not found`).
-- **Edge cases**: add validation and null‑checks in `ConnectionsImpl#send`/`disconnect`; improve filename length handling for UTF‑8 in `BCAST` packing.
-- **Codec correctness**: tighten DATA decoding edge cases and defensive bounds checks; add unit tests for all opcodes and framing.
-- **Observability**: optional structured logging around connections, requests, and transfers.
-
----
-
-## Testing tips
-- Use the seeded files in `server/Files/` to test `RRQ` and `DIRQ` immediately.
-- Try concurrent clients to see `BCAST` messages in action during `WRQ`/`DELRQ`.
-- Validate multi‑block transfers by uploading/downloading files larger than 512 bytes.
-
+## Credits
+- Yuval Levy
+- Tomer Faran
 ---
 
 ## Attribution
