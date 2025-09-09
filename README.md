@@ -22,17 +22,17 @@ An end‑to‑end implementation of an extended TFTP (Trivial File Transfer Prot
 ## Architecture
 
 ### Server (Java, Maven)
-- `bgu.spl.net.srv.Server`/`BaseServer`: bootstraps the TPC server, accepts sockets, and wires a `BlockingConnectionHandler` per connection.
-- `bgu.spl.net.srv.BlockingConnectionHandler`: per‑client runnable responsible for socket I/O and invoking protocol/encdec.
-- `bgu.spl.net.srv.Connections`/`ConnectionsImpl`: registry that maps `connectionId → ConnectionHandler` for p2p sends and broadcasts.
-- `bgu.spl.net.api.BidiMessagingProtocol<byte[]>`: protocol SPI; implemented by `bgu.spl.net.impl.tftp.TftpProtocol`.
-- `bgu.spl.net.api.MessageEncoderDecoder<byte[]>`: SPI; implemented by `bgu.spl.net.impl.tftp.TftpEncoderDecoder`.
-- `bgu.spl.net.impl.tftp.holder`: in‑memory state for logged‑in users and files.
+- `Server`/`BaseServer`: bootstraps the TPC server, accepts sockets, and wires a `BlockingConnectionHandler` per connection.
+- `BlockingConnectionHandler`: per‑client runnable responsible for socket I/O and invoking protocol/encdec.
+- `Connections`/`ConnectionsImpl`: registry that maps `connectionId → ConnectionHandler` for p2p sends and broadcasts.
+- `BidiMessagingProtocol<byte[]>`: protocol SPI; implemented by `tftp.TftpProtocol`.
+- `MessageEncoderDecoder<byte[]>`: SPI; implemented by `tftp.TftpEncoderDecoder`.
+- `tftp.holder`: in‑memory state for logged‑in users and files.
 
 ### Client (Java, Maven)
-- `bgu.spl.net.impl.tftp.TftpClient`: interactive client core with send/receive loops, flow control, and file I/O.
-- `bgu.spl.net.impl.tftp.TftpClientEncDec`: client‑side codec for framing/deframing protocol packets.
-- `bgu.spl.net.impl.tftp.TftpClientMain`: launches client and starts keyboard/listener threads.
+- `tftp.TftpClient`: interactive client core with send/receive loops, flow control, and file I/O.
+- `tftp.TftpClientEncDec`: client‑side codec for framing/deframing protocol packets.
+- `tftp.TftpClientMain`: launches client and starts keyboard/listener threads.
 
 ### Data flow highlights
 - **Upload (WRQ)**: client sends `WRQ`, waits for `ACK 0`, streams file in 512‑byte `DATA` packets; server ACKs each block; client prints completion.
