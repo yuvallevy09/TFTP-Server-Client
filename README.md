@@ -1,19 +1,144 @@
-Extended TFTP Server and Client (Java)
+## Extended TFTP Server & Client (Java, TCP)
 
-Description:
+### What this project is
+An end‑to‑end implementation of an extended TFTP (Trivial File Transfer Protocol) over TCP. It includes a multi‑client server (Thread‑Per‑Client pattern) and an interactive client with a keyboard thread and a listening thread. The system supports login, upload, download, directory listing, delete, disconnect, and server‑initiated broadcasts when files are added or removed.
 
-Implemented an extended version of the Trivial File Transfer Protocol (TFTP) server and client in Java.
-The project focuses on file upload, download, deletion, and directory listing functionalities.
-Notably, it supports multiple user interactions and broadcast capabilities.
-Modifications to existing server interfaces enable seamless communication between clients, including robust binary protocols.
+### Why it matters
+- Demonstrates design and implementation of a custom binary protocol over TCP with Big‑endian encoding.
+- Showcases concurrent server architecture, safe I/O, and message framing/decoding.
+- Provides a practical, production‑like client/server system that exercises networking, concurrency, and state management.
 
-Skills Demonstrated:
+---
 
-- Network Programming
-- Network Communications
-- Network Protocols
-- Socket Programming
-- Multithreading
-- Java Concurrency
-- Network Protocol Design
-- Software Design Patterns
+## Features
+- **Protocol coverage**: `LOGRQ`, `RRQ`, `WRQ`, `DIRQ`, `DELRQ`, `DISC`, `DATA`, `ACK`, `ERROR`, `BCAST`.
+- **Bi‑directional messaging** via `Connections` API to target specific clients and to broadcast to all logged‑in clients.
+- **Thread‑Per‑Client (TPC) server** with a `BlockingConnectionHandler` per client.
+- **Binary protocol** with explicit framing and Big‑endian numeric fields.
+- **Client with two threads**: keyboard input and listener for server packets.
+- **File system integration**: uses the server `Files/` directory as the authoritative store.
+
+---
+
+## Architecture
+
+### Server (Java, Maven)
+- `bgu.spl.net.srv.Server`/`BaseServer`: bootstraps the TPC server, accepts sockets, and wires a `BlockingConnectionHandler` per connection.
+- `bgu.spl.net.srv.BlockingConnectionHandler`: per‑client runnable responsible for socket I/O and invoking protocol/encdec.
+- `bgu.spl.net.srv.Connections`/`ConnectionsImpl`: registry that maps `connectionId → ConnectionHandler` for p2p sends and broadcasts.
+- `bgu.spl.net.api.BidiMessagingProtocol<byte[]>`: protocol SPI; implemented by `bgu.spl.net.impl.tftp.TftpProtocol`.
+- `bgu.spl.net.api.MessageEncoderDecoder<byte[]>`: SPI; implemented by `bgu.spl.net.impl.tftp.TftpEncoderDecoder`.
+- `bgu.spl.net.impl.tftp.holder`: in‑memory state for logged‑in users and files.
+
+### Client (Java, Maven)
+- `bgu.spl.net.impl.tftp.TftpClient`: interactive client core with send/receive loops, flow control, and file I/O.
+- `bgu.spl.net.impl.tftp.TftpClientEncDec`: client‑side codec for framing/deframing protocol packets.
+- `bgu.spl.net.impl.tftp.TftpClientMain`: launches client and starts keyboard/listener threads.
+
+### Data flow highlights
+- **Upload (WRQ)**: client sends `WRQ`, waits for `ACK 0`, streams file in 512‑byte `DATA` packets; server ACKs each block; client prints completion.
+- **Download (RRQ)**: client sends `RRQ`; server streams `DATA` packets; client ACKs each block; writes file to disk upon completion.
+- **DIRQ**: server returns newline‑separated filenames via `DATA` packets; client prints them.
+- **Delete (DELRQ)**: server deletes file, ACKs requester, and sends `BCAST del <filename>` to all logged‑in clients.
+- **Login/Disconnect**: `LOGRQ` registers a unique username; `DISC` cleanly removes user and closes connection after `ACK 0`.
+
+---
+
+## Repository layout
+```text
+Skeleton/
+  server/
+    src/main/java/bgu/spl/net/api/               # Protocol/codec SPIs
+    src/main/java/bgu/spl/net/srv/                # TPC server infra + Connections registry
+    src/main/java/bgu/spl/net/impl/tftp/          # TFTP protocol + encoder/decoder + server main
+    Files/                                        # Server data directory (seeded with sample files)
+    pom.xml
+  client/
+    src/main/java/bgu/spl/net/impl/tftp/          # Client core, codec, and main
+    pom.xml
+```
+
+---
+
+## Build & Run
+
+Prerequisites: Java 8+, Maven 3.8+
+
+### Server
+```bash
+cd Skeleton/server
+mvn -q compile
+mvn -q exec:java -Dexec.mainClass="bgu.spl.net.impl.tftp.TftpServer" -Dexec.args="7777"
+```
+Notes:
+- The server listens on port `7777` in the current implementation.
+- The initial file set is loaded from `Skeleton/server/Files/` on startup.
+
+### Client
+```bash
+cd Skeleton/client
+mvn -q compile
+mvn -q exec:java -Dexec.mainClass="bgu.spl.net.impl.tftp.TftpClientMain" -Dexec.args="<server-host> 7777"
+```
+Notes:
+- The provided `TftpClientMain` defaults to host `cs302six5-4-lnx` and port `7777` if no args are supplied.
+- Once running, type commands in the client terminal as shown below.
+
+---
+
+## Example session (client commands)
+```text
+LOGRQ alice
+DIRQ
+WRQ A.txt
+RRQ "this is a file with spaces.txt"
+DELRQ A.txt
+DISC
+```
+Expected console prints include `ACK <n>`, `BCAST add|del <filename>`, and final transfer confirmations:
+```text
+WRQ A.txt complete
+RRQ B.txt complete
+```
+
+---
+
+## Implementation highlights
+- **Message framing**: a stateful encoder/decoder collects bytes until a full packet is assembled; numerics are parsed in Big‑endian.
+- **Backpressure/flow control**: client waits (`wait/notify`) between request and completion/next‑step acknowledgement to keep transfers ordered.
+- **Broadcasts**: server emits `BCAST` to all logged‑in clients on file add/delete events.
+- **Thread safety**: shared registries use `ConcurrentHashMap`; socket writes are synchronized per connection handler.
+- **File I/O**: uses `Files.readAllBytes` for transfers and streams to write downloads to disk; server `Files/` is the canonical store.
+
+---
+
+## Skills and tools
+- **Java 8**: concurrency, I/O streams, NIO files.
+- **Maven**: per‑module build and execution.
+- **Networking**: TCP sockets, Thread‑Per‑Client server.
+- **Binary protocols**: Big‑endian encoding, UTF‑8 strings with zero terminators, message framing.
+- **Software design**: clean interfaces (`Connections`, `BidiMessagingProtocol`, `MessageEncoderDecoder`), separation of concerns, state management.
+
+---
+
+## Known limitations and next steps
+The project is complete enough for functional demos, and these items are good candidates for polishing:
+- **CLI args**: server/client mains currently favor defaults (e.g., port `7777`, predefined host); parameterize fully from command line.
+- **Protocol interface types**: `BidiMessagingProtocol#start` receives a concrete `ConnectionsImpl` rather than the `Connections` interface; generalize to the interface.
+- **Error codes/messages**: align `ERROR` packet error‑code field to spec values (0–7) and use precise messages (e.g., `File not found`).
+- **Edge cases**: add validation and null‑checks in `ConnectionsImpl#send`/`disconnect`; improve filename length handling for UTF‑8 in `BCAST` packing.
+- **Codec correctness**: tighten DATA decoding edge cases and defensive bounds checks; add unit tests for all opcodes and framing.
+- **Observability**: optional structured logging around connections, requests, and transfers.
+
+---
+
+## Testing tips
+- Use the seeded files in `server/Files/` to test `RRQ` and `DIRQ` immediately.
+- Try concurrent clients to see `BCAST` messages in action during `WRQ`/`DELRQ`.
+- Validate multi‑block transfers by uploading/downloading files larger than 512 bytes.
+
+---
+
+## Attribution
+Course assignment: Extended TFTP over TCP. All implementation, design decisions, and documentation in this repository are by the project authors.
+
